@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply m-0 bg-obsidian p-0 text-white;
+  }
+
+  *,
+  ::before,
+  ::after {
+    @apply border-neutral-800;
+    box-sizing: border-box;
+  }
+
+  a,
+  button,
+  input {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    @apply bg-transparent text-inherit;
+    font: inherit;
+  }
+}
