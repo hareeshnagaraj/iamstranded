@@ -1,6 +1,6 @@
 export function Footer() {
   return (
-    <footer className="mx-auto w-full max-w-[960px] px-4 pb-10 lg:px-6">
+    <footer className="mx-auto w-full max-w-[1400px] px-4 pb-10 lg:px-6">
       <div className="border-t border-neutral-800 pt-5">
         <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-neutral-600">
           IAMSTRANDED — Crisis travel intelligence. Data from NOTAMs, flight

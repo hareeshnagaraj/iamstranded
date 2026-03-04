@@ -87,13 +87,13 @@ values
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'DOH', 'Hamad International', 'closed', 'Closed', 490);
 
 -- Intel feed (5 items)
-insert into public.intel_feed (crisis_id, category, message, source)
+insert into public.intel_feed (crisis_id, category, message, source, source_url)
 values
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'flight', 'Emirates confirms DXB suspension extended to Tuesday 4 Mar afternoon. Rebooking waivers active through March 18.', 'Emirates official, AP'),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'ground', 'Travelers reporting 3-4h drive to Muscat from Dubai via Hatta. Al Ain border less congested. Car rental limited — book now.', 'X/Twitter aggregated (12 reports)'),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'accommodation', 'UAE government confirms hotel costs covered for stranded travelers. Contact hotel front desk to extend stay.', 'CNN, The National'),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'embassy', 'US Embassy advises shelter in place. Register with STEP program for evacuation updates. Consular services limited hours.', 'US State Department'),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'safety', 'Missile debris in industrial areas east of Sharjah. Avoid Al Nahda industrial zone after dark.', 'UAE Civil Defense');
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'flight', 'Emirates confirms DXB suspension extended to Tuesday 4 Mar afternoon. Rebooking waivers active through March 18.', 'Emirates official, AP', 'https://www.emirates.com/notices'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'ground', 'Travelers reporting 3-4h drive to Muscat from Dubai via Hatta. Al Ain border less congested. Car rental limited — book now.', 'X/Twitter aggregated (12 reports)', null),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'accommodation', 'UAE government confirms hotel costs covered for stranded travelers. Contact hotel front desk to extend stay.', 'CNN, The National', 'https://www.cnn.com/middleeast'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'embassy', 'US Embassy advises shelter in place. Register with STEP program for evacuation updates. Consular services limited hours.', 'US State Department', 'https://travel.state.gov/uae'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'safety', 'Missile debris in industrial areas east of Sharjah. Avoid Al Nahda industrial zone after dark.', 'UAE Civil Defense', null);
 
 -- Emergency contacts (4)
 insert into public.emergency_contacts (crisis_id, name, phone, url)

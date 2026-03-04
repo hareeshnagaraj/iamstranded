@@ -1,7 +1,7 @@
 export function Header() {
   return (
     <header className="border-b border-neutral-800 bg-obsidian px-5 py-3">
-      <div className="mx-auto flex max-w-[960px] items-center justify-between">
+      <div className="mx-auto flex max-w-[1400px] items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[13px] font-bold uppercase tracking-[0.15em] text-text-primary">
             IAMSTRANDED

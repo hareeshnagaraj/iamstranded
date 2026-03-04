@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Building2,
   Car,
+  ExternalLink,
   Plane,
   Shield,
 } from "lucide-react";
@@ -87,6 +88,7 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
             category: (row.category as FeedCategory) ?? "flight",
             message: String(row.message),
             source: String(row.source ?? ""),
+            sourceUrl: row.source_url ? String(row.source_url) : null,
             createdAt: String(row.created_at ?? new Date().toISOString()),
           };
           setFeed((prev) => [item, ...prev]);
@@ -103,8 +105,8 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
     filter === "all" ? feed : feed.filter((f) => f.category === filter);
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-4 flex shrink-0 items-center justify-between border-b border-neutral-800 pb-3">
         <h2 className="font-display text-lg font-bold text-text-primary">
           Live Intel
         </h2>
@@ -116,11 +118,11 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
         </span>
       </div>
 
-      <div className="mb-3">
+      <div className="mb-3 shrink-0">
         <FilterChips active={filter} onChange={setFilter} />
       </div>
 
-      <div className="border border-neutral-800">
+      <div className="min-h-0 flex-1 overflow-y-auto border border-neutral-800">
         {filtered.map((item, i) => (
           <div
             key={item.id}
@@ -144,9 +146,21 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
             <p className="text-[13px] leading-snug text-neutral-400">
               {item.message}
             </p>
-            <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.08em] text-neutral-700">
-              {item.source}
-            </span>
+            {item.sourceUrl ? (
+              <a
+                href={item.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.08em] text-neutral-600 transition-colors hover:text-neutral-400"
+              >
+                {item.source}
+                <ExternalLink size={9} />
+              </a>
+            ) : (
+              <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.08em] text-neutral-700">
+                {item.source}
+              </span>
+            )}
           </div>
         ))}
         {filtered.length === 0 && (

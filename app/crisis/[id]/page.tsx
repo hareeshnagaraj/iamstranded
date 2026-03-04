@@ -15,7 +15,7 @@ export default async function CrisisPage({
   return (
     <div className="min-h-screen bg-obsidian text-text-primary">
       <Header />
-      <main className="mx-auto w-full max-w-[960px] px-4 py-6 lg:px-6">
+      <main className="mx-auto w-full max-w-[1400px] px-4 py-6 lg:px-6">
         <CrisisPageShell data={data} />
       </main>
       <Footer />

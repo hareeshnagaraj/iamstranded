@@ -77,6 +77,7 @@ create table if not exists public.intel_feed (
   category text not null check (category in ('flight', 'ground', 'accommodation', 'embassy', 'safety')),
   message text not null,
   source text not null default '',
+  source_url text,
   created_at timestamptz not null default timezone('utc', now())
 );
 
@@ -137,6 +138,11 @@ create policy "service write routes"
 drop policy if exists "service write route_legs" on public.route_legs;
 create policy "service write route_legs"
   on public.route_legs for all to service_role using (true) with check (true);
+
+-- Write policy for intel feed (service role can insert — used by Edge Function)
+drop policy if exists "service write intel_feed" on public.intel_feed;
+create policy "service write intel_feed"
+  on public.intel_feed for all to service_role using (true) with check (true);
 
 -- Realtime publication for intel feed
 alter publication supabase_realtime add table public.intel_feed;

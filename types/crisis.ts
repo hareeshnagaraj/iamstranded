@@ -57,6 +57,7 @@ export interface IntelFeedItem {
   category: FeedCategory;
   message: string;
   source: string;
+  sourceUrl: string | null;
   createdAt: string;
 }
 

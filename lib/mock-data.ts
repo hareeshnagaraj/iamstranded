@@ -100,11 +100,11 @@ const airports: Airport[] = [
 ];
 
 const feed: IntelFeedItem[] = [
-  { id: "f-1", crisisId: CRISIS_ID, category: "flight", message: "Emirates confirms DXB suspension extended to Tuesday 4 Mar afternoon. Rebooking waivers active through March 18.", source: "Emirates official, AP", createdAt: isoMinutesAgo(12) },
-  { id: "f-2", crisisId: CRISIS_ID, category: "ground", message: "Travelers reporting 3-4h drive to Muscat from Dubai via Hatta. Al Ain border less congested. Car rental limited — book now.", source: "X/Twitter aggregated (12 reports)", createdAt: isoMinutesAgo(28) },
-  { id: "f-3", crisisId: CRISIS_ID, category: "accommodation", message: "UAE government confirms hotel costs covered for stranded travelers. Contact hotel front desk to extend stay.", source: "CNN, The National", createdAt: isoMinutesAgo(45) },
-  { id: "f-4", crisisId: CRISIS_ID, category: "embassy", message: "US Embassy advises shelter in place. Register with STEP program for evacuation updates. Consular services limited hours.", source: "US State Department", createdAt: isoMinutesAgo(60) },
-  { id: "f-5", crisisId: CRISIS_ID, category: "safety", message: "Missile debris in industrial areas east of Sharjah. Avoid Al Nahda industrial zone after dark.", source: "UAE Civil Defense", createdAt: isoMinutesAgo(120) },
+  { id: "f-1", crisisId: CRISIS_ID, category: "flight", message: "Emirates confirms DXB suspension extended to Tuesday 4 Mar afternoon. Rebooking waivers active through March 18.", source: "Emirates official, AP", sourceUrl: "https://www.emirates.com/notices", createdAt: isoMinutesAgo(12) },
+  { id: "f-2", crisisId: CRISIS_ID, category: "ground", message: "Travelers reporting 3-4h drive to Muscat from Dubai via Hatta. Al Ain border less congested. Car rental limited — book now.", source: "X/Twitter aggregated (12 reports)", sourceUrl: null, createdAt: isoMinutesAgo(28) },
+  { id: "f-3", crisisId: CRISIS_ID, category: "accommodation", message: "UAE government confirms hotel costs covered for stranded travelers. Contact hotel front desk to extend stay.", source: "CNN, The National", sourceUrl: "https://www.cnn.com/middleeast", createdAt: isoMinutesAgo(45) },
+  { id: "f-4", crisisId: CRISIS_ID, category: "embassy", message: "US Embassy advises shelter in place. Register with STEP program for evacuation updates. Consular services limited hours.", source: "US State Department", sourceUrl: "https://travel.state.gov/uae", createdAt: isoMinutesAgo(60) },
+  { id: "f-5", crisisId: CRISIS_ID, category: "safety", message: "Missile debris in industrial areas east of Sharjah. Avoid Al Nahda industrial zone after dark.", source: "UAE Civil Defense", sourceUrl: null, createdAt: isoMinutesAgo(120) },
 ];
 
 const contacts: EmergencyContact[] = [

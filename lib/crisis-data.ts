@@ -73,6 +73,7 @@ function mapFeedRow(row: Row): IntelFeedItem {
     category: (row.category as IntelFeedItem["category"]) ?? "flight",
     message: String(row.message),
     source: String(row.source ?? ""),
+    sourceUrl: row.source_url ? String(row.source_url) : null,
     createdAt: String(row.created_at ?? new Date().toISOString()),
   };
 }
