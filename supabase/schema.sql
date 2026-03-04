@@ -64,6 +64,8 @@ create table if not exists public.nearby_airports (
   status text not null check (status in ('open', 'warning', 'closed')),
   status_label text not null,
   distance_km integer not null,
+  latitude double precision not null default 0,
+  longitude double precision not null default 0,
   created_at timestamptz not null default timezone('utc', now())
 );
 

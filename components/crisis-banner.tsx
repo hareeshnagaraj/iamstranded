@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, MapPin, Plane } from "lucide-react";
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 import type { CrisisEvent } from "@/types/crisis";
 
 export function CrisisBanner({
@@ -46,30 +47,18 @@ export function CrisisBanner({
 
         {/* Search inputs */}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          <div className="relative min-w-[160px] flex-1">
-            <MapPin
-              size={14}
-              className="absolute left-3 top-3 text-neutral-600"
-            />
-            <input
-              value={origin}
-              onChange={(e) => onOriginChange(e.target.value)}
-              placeholder="Your location"
-              className="w-full border border-neutral-800 bg-[#0A0A0A] py-2.5 pl-[34px] pr-3 font-mono text-sm text-text-primary outline-none placeholder:text-neutral-700 focus:border-neutral-600"
-            />
-          </div>
-          <div className="relative min-w-[160px] flex-1">
-            <Plane
-              size={14}
-              className="absolute left-3 top-3 text-neutral-600"
-            />
-            <input
-              value={destination}
-              onChange={(e) => onDestinationChange(e.target.value)}
-              placeholder="Destination"
-              className="w-full border border-neutral-800 bg-[#0A0A0A] py-2.5 pl-[34px] pr-3 font-mono text-sm text-text-primary outline-none placeholder:text-neutral-700 focus:border-neutral-600"
-            />
-          </div>
+          <LocationAutocomplete
+            value={origin}
+            onChange={onOriginChange}
+            placeholder="Your location"
+            icon={MapPin}
+          />
+          <LocationAutocomplete
+            value={destination}
+            onChange={onDestinationChange}
+            placeholder="Destination"
+            icon={Plane}
+          />
           <button
             onClick={onSearch}
             disabled={loading}

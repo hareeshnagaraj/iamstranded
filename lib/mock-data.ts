@@ -90,13 +90,13 @@ const routes: Route[] = [
 ];
 
 const airports: Airport[] = [
-  { id: "ap-1", crisisId: CRISIS_ID, airportCode: "DXB", airportName: "Dubai International", status: "closed", statusLabel: "Closed", distanceKm: 15 },
-  { id: "ap-2", crisisId: CRISIS_ID, airportCode: "SHJ", airportName: "Sharjah International", status: "closed", statusLabel: "Closed", distanceKm: 22 },
-  { id: "ap-3", crisisId: CRISIS_ID, airportCode: "AUH", airportName: "Abu Dhabi Zayed Intl", status: "closed", statusLabel: "Closed", distanceKm: 140 },
-  { id: "ap-4", crisisId: CRISIS_ID, airportCode: "MCT", airportName: "Muscat International", status: "open", statusLabel: "Open", distanceKm: 450 },
-  { id: "ap-5", crisisId: CRISIS_ID, airportCode: "SLL", airportName: "Salalah", status: "open", statusLabel: "Open", distanceKm: 1100 },
-  { id: "ap-6", crisisId: CRISIS_ID, airportCode: "BAH", airportName: "Bahrain International", status: "warning", statusLabel: "Partial", distanceKm: 530 },
-  { id: "ap-7", crisisId: CRISIS_ID, airportCode: "DOH", airportName: "Hamad International", status: "closed", statusLabel: "Closed", distanceKm: 490 },
+  { id: "ap-1", crisisId: CRISIS_ID, airportCode: "DXB", airportName: "Dubai International", status: "closed", statusLabel: "Closed", distanceKm: 15, latitude: 25.2532, longitude: 55.3657 },
+  { id: "ap-2", crisisId: CRISIS_ID, airportCode: "SHJ", airportName: "Sharjah International", status: "closed", statusLabel: "Closed", distanceKm: 22, latitude: 25.3285, longitude: 55.5172 },
+  { id: "ap-3", crisisId: CRISIS_ID, airportCode: "AUH", airportName: "Abu Dhabi Zayed Intl", status: "closed", statusLabel: "Closed", distanceKm: 140, latitude: 24.4431, longitude: 54.6511 },
+  { id: "ap-4", crisisId: CRISIS_ID, airportCode: "MCT", airportName: "Muscat International", status: "open", statusLabel: "Open", distanceKm: 450, latitude: 23.5933, longitude: 58.2844 },
+  { id: "ap-5", crisisId: CRISIS_ID, airportCode: "SLL", airportName: "Salalah", status: "open", statusLabel: "Open", distanceKm: 1100, latitude: 17.0387, longitude: 54.0914 },
+  { id: "ap-6", crisisId: CRISIS_ID, airportCode: "BAH", airportName: "Bahrain International", status: "warning", statusLabel: "Partial", distanceKm: 530, latitude: 26.2708, longitude: 50.6336 },
+  { id: "ap-7", crisisId: CRISIS_ID, airportCode: "DOH", airportName: "Hamad International", status: "closed", statusLabel: "Closed", distanceKm: 490, latitude: 25.2731, longitude: 51.6081 },
 ];
 
 const feed: IntelFeedItem[] = [

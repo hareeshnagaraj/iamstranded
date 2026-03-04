@@ -63,6 +63,8 @@ function mapAirportRow(row: Row): Airport {
     status: (row.status as Airport["status"]) ?? "closed",
     statusLabel: String(row.status_label ?? "Unknown"),
     distanceKm: Number(row.distance_km ?? 0),
+    latitude: Number(row.latitude ?? 0),
+    longitude: Number(row.longitude ?? 0),
   };
 }
 

@@ -76,15 +76,15 @@ values
   ('b3000000-0000-0000-0000-000000000003', 2, 'ATH', 'open', null, null);
 
 -- Nearby airports (7)
-insert into public.nearby_airports (crisis_id, airport_code, airport_name, status, status_label, distance_km)
+insert into public.nearby_airports (crisis_id, airport_code, airport_name, status, status_label, distance_km, latitude, longitude)
 values
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'DXB', 'Dubai International', 'closed', 'Closed', 15),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'SHJ', 'Sharjah International', 'closed', 'Closed', 22),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'AUH', 'Abu Dhabi Zayed Intl', 'closed', 'Closed', 140),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'MCT', 'Muscat International', 'open', 'Open', 450),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'SLL', 'Salalah', 'open', 'Open', 1100),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'BAH', 'Bahrain International', 'warning', 'Partial', 530),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'DOH', 'Hamad International', 'closed', 'Closed', 490);
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'DXB', 'Dubai International', 'closed', 'Closed', 15, 25.2532, 55.3657),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'SHJ', 'Sharjah International', 'closed', 'Closed', 22, 25.3285, 55.5172),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'AUH', 'Abu Dhabi Zayed Intl', 'closed', 'Closed', 140, 24.4431, 54.6511),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'MCT', 'Muscat International', 'open', 'Open', 450, 23.5933, 58.2844),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'SLL', 'Salalah', 'open', 'Open', 1100, 17.0387, 54.0914),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'BAH', 'Bahrain International', 'warning', 'Partial', 530, 26.2708, 50.6336),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'DOH', 'Hamad International', 'closed', 'Closed', 490, 25.2731, 51.6081);
 
 -- Intel feed (5 items)
 insert into public.intel_feed (crisis_id, category, message, source, source_url)

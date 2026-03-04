@@ -1,7 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import type { Airport } from "@/types/crisis";
 
-export function AirportTable({ airports }: { airports: Airport[] }) {
+interface AirportWithUserDistance extends Airport {
+  userDistanceKm?: number;
+}
+
+interface AirportTableProps {
+  airports: AirportWithUserDistance[];
+  origin?: string | null;
+}
+
+export function AirportTable({ airports, origin }: AirportTableProps) {
+  const hasUserDistance = airports.some((a) => a.userDistanceKm != null);
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
@@ -9,7 +20,7 @@ export function AirportTable({ airports }: { airports: Airport[] }) {
           Airport Telemetry
         </h2>
         <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-neutral-600">
-          500km radius
+          {hasUserDistance && origin ? `From ${origin}` : "500km radius"}
         </span>
       </div>
       <div className="overflow-x-auto border border-neutral-800">
@@ -48,7 +59,9 @@ export function AirportTable({ airports }: { airports: Airport[] }) {
                   <Badge status={airport.status} label={airport.statusLabel} />
                 </td>
                 <td className="px-4 py-2.5 text-right font-mono text-[11px] uppercase tracking-tight text-neutral-600">
-                  {airport.distanceKm} km
+                  {airport.userDistanceKm != null
+                    ? `${airport.userDistanceKm} km`
+                    : `${airport.distanceKm} km`}
                 </td>
               </tr>
             ))}

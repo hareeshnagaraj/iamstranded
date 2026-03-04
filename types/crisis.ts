@@ -49,6 +49,8 @@ export interface Airport {
   status: AirportStatus;
   statusLabel: string;
   distanceKm: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface IntelFeedItem {

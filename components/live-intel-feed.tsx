@@ -59,9 +59,14 @@ function timeAgo(isoDate: string): string {
 interface LiveIntelFeedProps {
   feed: IntelFeedItem[];
   crisisId: string;
+  nearbyAirportCodes?: string[];
 }
 
-export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProps) {
+export function LiveIntelFeed({
+  feed: initialFeed,
+  crisisId,
+  nearbyAirportCodes = [],
+}: LiveIntelFeedProps) {
   const [feed, setFeed] = useState(initialFeed);
   const [filter, setFilter] = useState("all");
 
@@ -101,8 +106,22 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
     };
   }, [crisisId]);
 
-  const filtered =
-    filter === "all" ? feed : feed.filter((f) => f.category === filter);
+  // Check if a feed item mentions any nearby airport code
+  const isNearUser = (item: IntelFeedItem): boolean => {
+    if (nearbyAirportCodes.length === 0) return false;
+    const msg = item.message.toUpperCase();
+    return nearbyAirportCodes.some((code) => msg.includes(code));
+  };
+
+  const filtered = (() => {
+    const base =
+      filter === "all" ? feed : feed.filter((f) => f.category === filter);
+    if (nearbyAirportCodes.length === 0) return base;
+    // Soft-sort: "near you" items first, preserving time order within each group
+    const near = base.filter(isNearUser);
+    const rest = base.filter((item) => !isNearUser(item));
+    return [...near, ...rest];
+  })();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -139,6 +158,11 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
               >
                 {categoryLabel[item.category] ?? item.category}
               </span>
+              {isNearUser(item) && (
+                <span className="rounded-sm bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-500">
+                  Near you
+                </span>
+              )}
               <span className="ml-auto font-mono text-[10px] uppercase tracking-tight text-neutral-700">
                 {timeAgo(item.createdAt)}
               </span>

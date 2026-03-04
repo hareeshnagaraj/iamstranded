@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CrisisBanner } from "@/components/crisis-banner";
 import { LoadingShimmer } from "@/components/loading-shimmer";
 import { RouteList } from "@/components/route-list";
 import { AirportTable } from "@/components/airport-table";
 import { LiveIntelFeed } from "@/components/live-intel-feed";
 import { EmergencyContacts } from "@/components/emergency-contacts";
-import type { CrisisPayload, Route } from "@/types/crisis";
+import { useGeocode } from "@/hooks/use-geocode";
+import { haversineKm } from "@/lib/geo";
+import type { Airport, CrisisPayload, Route } from "@/types/crisis";
 
 export function CrisisPageShell({ data }: { data: CrisisPayload }) {
   const [origin, setOrigin] = useState("Al Nahda, Dubai");
@@ -76,6 +78,30 @@ export function CrisisPageShell({ data }: { data: CrisisPayload }) {
     }
   };
 
+  // Geocode origin for user-relative distances
+  const userCoords = useGeocode(origin);
+
+  // Compute user-relative distances and sort airports
+  const sortedAirports = useMemo(() => {
+    if (!userCoords) return data.airports;
+
+    const withUserDistance: (Airport & { userDistanceKm: number })[] =
+      data.airports.map((ap) => ({
+        ...ap,
+        userDistanceKm: Math.round(
+          haversineKm(userCoords.lat, userCoords.lon, ap.latitude, ap.longitude),
+        ),
+      }));
+
+    return withUserDistance.sort((a, b) => a.userDistanceKm - b.userDistanceKm);
+  }, [data.airports, userCoords]);
+
+  // Top 3 nearest airport codes for "Near you" feed matching
+  const nearbyAirportCodes = useMemo(() => {
+    if (!userCoords) return [];
+    return sortedAirports.slice(0, 3).map((ap) => ap.airportCode);
+  }, [sortedAirports, userCoords]);
+
   const displayRoutes = searchRoutes ?? null;
   const showShimmer = loading;
   const showRoutes = !loading && displayRoutes !== null;
@@ -84,7 +110,11 @@ export function CrisisPageShell({ data }: { data: CrisisPayload }) {
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
       {/* LEFT: Live Intel — sticky scrollable sidebar */}
       <div className="flex flex-col max-h-[60vh] overflow-hidden lg:sticky lg:top-4 lg:self-start lg:w-[380px] lg:shrink-0 lg:max-h-[calc(100vh-2rem)]">
-        <LiveIntelFeed feed={data.feed} crisisId={data.crisis.id} />
+        <LiveIntelFeed
+          feed={data.feed}
+          crisisId={data.crisis.id}
+          nearbyAirportCodes={nearbyAirportCodes}
+        />
       </div>
 
       {/* RIGHT: Everything else — scrolls normally */}
@@ -102,7 +132,10 @@ export function CrisisPageShell({ data }: { data: CrisisPayload }) {
         {showShimmer && <LoadingShimmer origin={origin} />}
         {showRoutes && <RouteList routes={displayRoutes} />}
 
-        <AirportTable airports={data.airports} />
+        <AirportTable
+          airports={sortedAirports}
+          origin={userCoords ? origin : null}
+        />
 
         <EmergencyContacts contacts={data.contacts} />
       </div>
