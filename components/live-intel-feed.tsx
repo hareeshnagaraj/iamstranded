@@ -10,6 +10,7 @@ import {
   Shield,
 } from "lucide-react";
 import { FilterChips } from "@/components/ui/filter-chips";
+import { useNearbyAirportCodes } from "@/components/nearby-airports-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { FeedCategory, IntelFeedItem } from "@/types/crisis";
 
@@ -59,14 +60,13 @@ function timeAgo(isoDate: string): string {
 interface LiveIntelFeedProps {
   feed: IntelFeedItem[];
   crisisId: string;
-  nearbyAirportCodes?: string[];
 }
 
 export function LiveIntelFeed({
   feed: initialFeed,
   crisisId,
-  nearbyAirportCodes = [],
 }: LiveIntelFeedProps) {
+  const nearbyAirportCodes = useNearbyAirportCodes();
   const [feed, setFeed] = useState(initialFeed);
   const [filter, setFilter] = useState("all");
 

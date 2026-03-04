@@ -5,13 +5,30 @@ import { CrisisBanner } from "@/components/crisis-banner";
 import { LoadingShimmer } from "@/components/loading-shimmer";
 import { RouteList } from "@/components/route-list";
 import { AirportTable } from "@/components/airport-table";
-import { LiveIntelFeed } from "@/components/live-intel-feed";
 import { EmergencyContacts } from "@/components/emergency-contacts";
+import { NearbyAirportsProvider } from "@/components/nearby-airports-provider";
 import { useGeocode } from "@/hooks/use-geocode";
 import { haversineKm } from "@/lib/geo";
-import type { Airport, CrisisPayload, Route } from "@/types/crisis";
+import type {
+  Airport,
+  CrisisEvent,
+  EmergencyContact,
+  Route,
+} from "@/types/crisis";
 
-export function CrisisPageShell({ data }: { data: CrisisPayload }) {
+interface ShellData {
+  crisis: CrisisEvent;
+  airports: Airport[];
+  contacts: EmergencyContact[];
+}
+
+export function CrisisPageShell({
+  data,
+  children,
+}: {
+  data: ShellData;
+  children: React.ReactNode;
+}) {
   const [origin, setOrigin] = useState("Al Nahda, Dubai");
   const [destination, setDestination] = useState("Athens, Greece");
   const [loading, setLoading] = useState(false);
@@ -66,13 +83,12 @@ export function CrisisPageShell({ data }: { data: CrisisPayload }) {
 
       if (res.ok) {
         const json = await res.json();
-        setSearchRoutes(json.routes ?? data.routes);
+        setSearchRoutes(json.routes ?? []);
       } else {
-        // Fallback to pre-loaded routes on error
-        setSearchRoutes(data.routes);
+        setSearchRoutes([]);
       }
     } catch {
-      setSearchRoutes(data.routes);
+      setSearchRoutes([]);
     } finally {
       setLoading(false);
     }
@@ -107,38 +123,36 @@ export function CrisisPageShell({ data }: { data: CrisisPayload }) {
   const showRoutes = !loading && displayRoutes !== null;
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-      {/* LEFT: Live Intel — sticky scrollable sidebar */}
-      <div className="flex flex-col max-h-[60vh] overflow-hidden lg:sticky lg:top-4 lg:self-start lg:w-[380px] lg:shrink-0 lg:max-h-[calc(100vh-2rem)]">
-        <LiveIntelFeed
-          feed={data.feed}
-          crisisId={data.crisis.id}
-          nearbyAirportCodes={nearbyAirportCodes}
-        />
+    <NearbyAirportsProvider codes={nearbyAirportCodes}>
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+        {/* LEFT: Live Intel — sticky scrollable sidebar (streamed via Suspense) */}
+        <div className="flex flex-col max-h-[60vh] overflow-hidden lg:sticky lg:top-4 lg:self-start lg:w-[380px] lg:shrink-0 lg:max-h-[calc(100vh-2rem)]">
+          {children}
+        </div>
+
+        {/* RIGHT: Everything else — scrolls normally */}
+        <div className="flex-1 space-y-8 min-w-0">
+          <CrisisBanner
+            crisis={data.crisis}
+            origin={origin}
+            destination={destination}
+            loading={loading}
+            onOriginChange={setOrigin}
+            onDestinationChange={setDestination}
+            onSearch={handleSearch}
+          />
+
+          {showShimmer && <LoadingShimmer origin={origin} />}
+          {showRoutes && <RouteList routes={displayRoutes} />}
+
+          <AirportTable
+            airports={sortedAirports}
+            origin={userCoords ? origin : null}
+          />
+
+          <EmergencyContacts contacts={data.contacts} />
+        </div>
       </div>
-
-      {/* RIGHT: Everything else — scrolls normally */}
-      <div className="flex-1 space-y-8 min-w-0">
-        <CrisisBanner
-          crisis={data.crisis}
-          origin={origin}
-          destination={destination}
-          loading={loading}
-          onOriginChange={setOrigin}
-          onDestinationChange={setDestination}
-          onSearch={handleSearch}
-        />
-
-        {showShimmer && <LoadingShimmer origin={origin} />}
-        {showRoutes && <RouteList routes={displayRoutes} />}
-
-        <AirportTable
-          airports={sortedAirports}
-          origin={userCoords ? origin : null}
-        />
-
-        <EmergencyContacts contacts={data.contacts} />
-      </div>
-    </div>
+    </NearbyAirportsProvider>
   );
 }

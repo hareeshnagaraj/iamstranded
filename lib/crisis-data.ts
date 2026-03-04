@@ -165,6 +165,108 @@ export async function getIntelFeed(
   return { crisis: payload.crisis, feed: payload.feed };
 }
 
+export async function getCrisisShellData(
+  slug: string,
+): Promise<{
+  crisis: CrisisEvent;
+  airports: Airport[];
+  contacts: EmergencyContact[];
+}> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    const mock = getMockPayload();
+    return { crisis: mock.crisis, airports: mock.airports, contacts: mock.contacts };
+  }
+
+  try {
+    const { data: crisisRows, error: crisisErr } = await supabase
+      .from("crisis_events")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .limit(1);
+
+    if (crisisErr || !crisisRows || crisisRows.length === 0) {
+      const mock = getMockPayload();
+      return { crisis: mock.crisis, airports: mock.airports, contacts: mock.contacts };
+    }
+
+    const crisis = mapCrisisRow(crisisRows[0] as Row);
+
+    const [airportsRes, contactsRes] = await Promise.all([
+      supabase
+        .from("nearby_airports")
+        .select("*")
+        .eq("crisis_id", crisis.id)
+        .order("distance_km", { ascending: true }),
+      supabase
+        .from("emergency_contacts")
+        .select("*")
+        .eq("crisis_id", crisis.id),
+    ]);
+
+    const mock = getMockPayload();
+    const mappedAirports = airportsRes.error
+      ? mock.airports
+      : (airportsRes.data ?? []).map((r) => mapAirportRow(r as Row));
+    const mappedContacts = contactsRes.error
+      ? mock.contacts
+      : (contactsRes.data ?? []).map((r) => mapContactRow(r as Row));
+
+    return {
+      crisis,
+      airports: mappedAirports.length > 0 ? mappedAirports : mock.airports,
+      contacts: mappedContacts.length > 0 ? mappedContacts : mock.contacts,
+    };
+  } catch {
+    const mock = getMockPayload();
+    return { crisis: mock.crisis, airports: mock.airports, contacts: mock.contacts };
+  }
+}
+
+export async function getFeedBySlug(
+  slug: string,
+): Promise<{ crisisId: string; feed: IntelFeedItem[] }> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    const mock = getMockPayload();
+    return { crisisId: mock.crisis.id, feed: mock.feed };
+  }
+
+  try {
+    const { data: crisisRows } = await supabase
+      .from("crisis_events")
+      .select("id")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .limit(1);
+
+    if (!crisisRows || crisisRows.length === 0) {
+      const mock = getMockPayload();
+      return { crisisId: mock.crisis.id, feed: mock.feed };
+    }
+
+    const crisisId = String((crisisRows[0] as Row).id);
+
+    const { data: feedRows, error } = await supabase
+      .from("intel_feed")
+      .select("*")
+      .eq("crisis_id", crisisId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error || !feedRows || feedRows.length === 0) {
+      const mock = getMockPayload();
+      return { crisisId, feed: mock.feed };
+    }
+
+    return { crisisId, feed: feedRows.map((r) => mapFeedRow(r as Row)) };
+  } catch {
+    const mock = getMockPayload();
+    return { crisisId: mock.crisis.id, feed: mock.feed };
+  }
+}
+
 const ROUTE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function getCachedRoutes(
