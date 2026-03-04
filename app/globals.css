@@ -4,13 +4,13 @@
 
 @layer base {
   body {
-    @apply m-0 bg-obsidian p-0 text-white;
+    @apply m-0 bg-surface-primary p-0 text-text-primary;
   }
 
   *,
   ::before,
   ::after {
-    @apply border-neutral-800;
+    @apply border-border-subtle;
     box-sizing: border-box;
   }
 
@@ -30,5 +30,9 @@
   textarea {
     @apply bg-transparent text-inherit;
     font: inherit;
+  }
+
+  input::placeholder {
+    @apply text-text-tertiary;
   }
 }

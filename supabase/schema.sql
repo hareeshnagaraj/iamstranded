@@ -1,91 +1,142 @@
--- Crisis/Stranded Traveler Tool schema (MVP)
+-- iamstranded schema — crisis travel intelligence
+-- Drop old tables first (if migrating from v1)
+-- drop table if exists public.safe_route_cache cascade;
+-- drop table if exists public.consular_contacts cascade;
+-- drop table if exists public.extraction_options cascade;
+-- drop table if exists public.ground_truth_updates cascade;
+-- drop table if exists public.crisis_regions cascade;
 
 create extension if not exists pgcrypto;
 
-create table if not exists public.crisis_regions (
+-- 1. Crisis events
+create table if not exists public.crisis_events (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
-  name text not null,
-  country_code text not null,
+  title text not null,
+  location text not null,
+  description text not null default '',
+  severity text not null check (severity in ('critical', 'high', 'medium', 'low')),
   is_active boolean not null default true,
-  priority integer not null default 99,
-  created_at timestamptz not null default timezone('utc', now())
-);
-
-create table if not exists public.ground_truth_updates (
-  id uuid primary key default gen_random_uuid(),
-  region_id uuid not null references public.crisis_regions(id) on delete cascade,
-  timestamp_utc timestamptz not null default timezone('utc', now()),
-  message text not null,
-  severity text not null check (severity in ('info', 'warning', 'critical')),
-  source_label text not null default 'Operator Feed'
-);
-
-create index if not exists ground_truth_updates_region_ts_idx
-  on public.ground_truth_updates (region_id, timestamp_utc desc);
-
-create table if not exists public.extraction_options (
-  id uuid primary key default gen_random_uuid(),
-  region_id uuid not null references public.crisis_regions(id) on delete cascade,
-  mode text not null check (mode in ('bus', 'train', 'border', 'air')),
-  distance_km numeric(8,2) not null,
-  status text not null check (status in ('operational', 'limited', 'closed')),
-  note text not null default '',
+  created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
-create table if not exists public.consular_contacts (
+-- 2. Ranked route options per crisis
+create table if not exists public.routes (
   id uuid primary key default gen_random_uuid(),
-  region_id uuid not null references public.crisis_regions(id) on delete cascade,
-  country text not null,
-  primary_phone text not null,
-  secondary_phone text,
-  hours_utc text not null default '24/7 emergency desk'
+  crisis_id uuid not null references public.crisis_events(id) on delete cascade,
+  rank integer not null,
+  title text not null,
+  confidence text not null check (confidence in ('HIGH', 'MEDIUM', 'LOW')),
+  time_estimate text not null,
+  cost_range text not null,
+  warning_text text,
+  detail text,
+  origin text not null default '',
+  destination text not null default '',
+  created_at timestamptz not null default timezone('utc', now())
 );
 
-create table if not exists public.safe_route_cache (
+create index if not exists routes_crisis_rank_idx
+  on public.routes (crisis_id, rank asc);
+
+-- 3. Ordered segments within a route
+create table if not exists public.route_legs (
   id uuid primary key default gen_random_uuid(),
-  region_id uuid not null references public.crisis_regions(id) on delete cascade,
-  snapshot_json jsonb not null,
-  generated_at timestamptz not null default timezone('utc', now())
+  route_id uuid not null references public.routes(id) on delete cascade,
+  leg_order integer not null,
+  airport_code text not null,
+  airport_status text not null check (airport_status in ('open', 'warning', 'closed')),
+  flight_code text,
+  departure_time text,
+  created_at timestamptz not null default timezone('utc', now())
 );
 
-alter table public.crisis_regions enable row level security;
-alter table public.ground_truth_updates enable row level security;
-alter table public.extraction_options enable row level security;
-alter table public.consular_contacts enable row level security;
-alter table public.safe_route_cache enable row level security;
+create index if not exists route_legs_route_order_idx
+  on public.route_legs (route_id, leg_order asc);
 
--- Public read-only policies for crisis data.
-drop policy if exists "public read crisis_regions" on public.crisis_regions;
-create policy "public read crisis_regions"
-  on public.crisis_regions for select
-  to anon
-  using (true);
+-- 4. Airport status board
+create table if not exists public.nearby_airports (
+  id uuid primary key default gen_random_uuid(),
+  crisis_id uuid not null references public.crisis_events(id) on delete cascade,
+  airport_code text not null,
+  airport_name text not null,
+  status text not null check (status in ('open', 'warning', 'closed')),
+  status_label text not null,
+  distance_km integer not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
 
-drop policy if exists "public read ground_truth_updates" on public.ground_truth_updates;
-create policy "public read ground_truth_updates"
-  on public.ground_truth_updates for select
-  to anon
-  using (true);
+create index if not exists nearby_airports_crisis_idx
+  on public.nearby_airports (crisis_id);
 
-drop policy if exists "public read extraction_options" on public.extraction_options;
-create policy "public read extraction_options"
-  on public.extraction_options for select
-  to anon
-  using (true);
+-- 5. Categorized live updates (realtime)
+create table if not exists public.intel_feed (
+  id uuid primary key default gen_random_uuid(),
+  crisis_id uuid not null references public.crisis_events(id) on delete cascade,
+  category text not null check (category in ('flight', 'ground', 'accommodation', 'embassy', 'safety')),
+  message text not null,
+  source text not null default '',
+  created_at timestamptz not null default timezone('utc', now())
+);
 
-drop policy if exists "public read consular_contacts" on public.consular_contacts;
-create policy "public read consular_contacts"
-  on public.consular_contacts for select
-  to anon
-  using (true);
+create index if not exists intel_feed_crisis_ts_idx
+  on public.intel_feed (crisis_id, created_at desc);
 
-drop policy if exists "public read safe_route_cache" on public.safe_route_cache;
-create policy "public read safe_route_cache"
-  on public.safe_route_cache for select
-  to anon
-  using (true);
+-- 6. Emergency contacts
+create table if not exists public.emergency_contacts (
+  id uuid primary key default gen_random_uuid(),
+  crisis_id uuid not null references public.crisis_events(id) on delete cascade,
+  name text not null,
+  phone text,
+  url text,
+  created_at timestamptz not null default timezone('utc', now())
+);
 
--- Realtime publication (ground truth feed).
-alter publication supabase_realtime add table public.ground_truth_updates;
+create index if not exists emergency_contacts_crisis_idx
+  on public.emergency_contacts (crisis_id);
+
+-- Enable RLS on all tables
+alter table public.crisis_events enable row level security;
+alter table public.routes enable row level security;
+alter table public.route_legs enable row level security;
+alter table public.nearby_airports enable row level security;
+alter table public.intel_feed enable row level security;
+alter table public.emergency_contacts enable row level security;
+
+-- Public read-only policies
+drop policy if exists "public read crisis_events" on public.crisis_events;
+create policy "public read crisis_events"
+  on public.crisis_events for select to anon using (true);
+
+drop policy if exists "public read routes" on public.routes;
+create policy "public read routes"
+  on public.routes for select to anon using (true);
+
+drop policy if exists "public read route_legs" on public.route_legs;
+create policy "public read route_legs"
+  on public.route_legs for select to anon using (true);
+
+drop policy if exists "public read nearby_airports" on public.nearby_airports;
+create policy "public read nearby_airports"
+  on public.nearby_airports for select to anon using (true);
+
+drop policy if exists "public read intel_feed" on public.intel_feed;
+create policy "public read intel_feed"
+  on public.intel_feed for select to anon using (true);
+
+drop policy if exists "public read emergency_contacts" on public.emergency_contacts;
+create policy "public read emergency_contacts"
+  on public.emergency_contacts for select to anon using (true);
+
+-- Write policies for route cache (service role / authenticated can write)
+drop policy if exists "service write routes" on public.routes;
+create policy "service write routes"
+  on public.routes for all to service_role using (true) with check (true);
+
+drop policy if exists "service write route_legs" on public.route_legs;
+create policy "service write route_legs"
+  on public.route_legs for all to service_role using (true) with check (true);
+
+-- Realtime publication for intel feed
+alter publication supabase_realtime add table public.intel_feed;

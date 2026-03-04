@@ -1,20 +1,17 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-});
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
 });
 
 export const metadata: Metadata = {
-  title: "Crisis Routing Instrument",
-  description: "Real-time extraction routing and consular telemetry.",
+  title: "iamstranded — Crisis Travel Intelligence",
+  description:
+    "Real-time route recommendations and intel for stranded travelers.",
 };
 
 export default function RootLayout({
@@ -23,11 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${playfair.variable} ${jetbrains.variable}`}
-    >
-      <body className="flex min-h-screen flex-col bg-obsidian font-sans antialiased text-white selection:bg-white selection:text-obsidian">
+    <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
+      <body className="flex min-h-screen flex-col bg-surface-primary font-sans antialiased text-text-primary">
         {children}
       </body>
     </html>

@@ -1,81 +1,77 @@
-export type Severity = "info" | "warning" | "critical";
+// iamstranded — core types
 
-export type ExtractionMode = "bus" | "train" | "border" | "air";
+export type CrisisSeverity = "critical" | "high" | "medium" | "low";
+export type Confidence = "HIGH" | "MEDIUM" | "LOW";
+export type AirportStatus = "open" | "warning" | "closed";
+export type FeedCategory = "flight" | "ground" | "accommodation" | "embassy" | "safety";
 
-export type ExtractionStatus = "operational" | "limited" | "closed";
-
-export type ConnectivityState = "stable" | "degraded" | "offline";
-
-export interface CrisisRegion {
+export interface CrisisEvent {
   id: string;
   slug: string;
-  name: string;
-  countryCode: string;
+  title: string;
+  location: string;
+  description: string;
+  severity: CrisisSeverity;
   isActive: boolean;
-  priority: number;
-}
-
-export interface GroundTruthUpdate {
-  id: string;
-  regionId: string;
-  timestampUtc: string;
-  message: string;
-  severity: Severity;
-  sourceLabel: string;
-}
-
-export interface ExtractionOption {
-  id: string;
-  regionId: string;
-  mode: ExtractionMode;
-  distanceKm: number;
-  status: ExtractionStatus;
-  note: string;
   updatedAt: string;
 }
 
-export interface ConsularContact {
+export interface RouteLeg {
   id: string;
-  regionId: string;
-  country: string;
-  primaryPhone: string;
-  secondaryPhone?: string;
-  hoursUtc: string;
+  routeId: string;
+  legOrder: number;
+  airportCode: string;
+  airportStatus: AirportStatus;
+  flightCode: string | null;
+  departureTime: string | null;
 }
 
-export interface SafeRouteCache {
+export interface Route {
   id: string;
-  regionId: string;
-  snapshotJson: Record<string, unknown>;
-  generatedAt: string;
+  crisisId: string;
+  rank: number;
+  title: string;
+  confidence: Confidence;
+  timeEstimate: string;
+  costRange: string;
+  warningText: string | null;
+  detail: string | null;
+  origin: string;
+  destination: string;
+  legs: RouteLeg[];
 }
 
-export interface DashboardPayload {
-  region: CrisisRegion;
-  groundTruth: GroundTruthUpdate[];
-  extractionOptions: ExtractionOption[];
-  consularContacts: ConsularContact[];
-  safeRouteCache: SafeRouteCache | null;
-  connectivityStatus: ConnectivityState;
-  cacheAvailable: boolean;
+export interface Airport {
+  id: string;
+  crisisId: string;
+  airportCode: string;
+  airportName: string;
+  status: AirportStatus;
+  statusLabel: string;
+  distanceKm: number;
 }
 
-export interface DashboardQuery {
-  region?: string;
-  location?: string;
-  nationality?: string;
-  lat?: number;
-  lng?: number;
+export interface IntelFeedItem {
+  id: string;
+  crisisId: string;
+  category: FeedCategory;
+  message: string;
+  source: string;
+  createdAt: string;
 }
 
-export interface OfflinePacket {
-  generatedAt: string;
-  region: CrisisRegion;
-  nationality: string;
-  locationInput: string;
-  connectivityStatus: ConnectivityState;
-  groundTruth: GroundTruthUpdate[];
-  extractionOptions: ExtractionOption[];
-  consularContacts: ConsularContact[];
-  safeRouteSnapshot: Record<string, unknown> | null;
+export interface EmergencyContact {
+  id: string;
+  crisisId: string;
+  name: string;
+  phone: string | null;
+  url: string | null;
+}
+
+export interface CrisisPayload {
+  crisis: CrisisEvent;
+  routes: Route[];
+  airports: Airport[];
+  feed: IntelFeedItem[];
+  contacts: EmergencyContact[];
 }

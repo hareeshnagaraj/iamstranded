@@ -1,24 +1,17 @@
-import { getMockRegion, getMockRegions } from "@/lib/mock-data";
-import type { CrisisRegion, DashboardQuery } from "@/types/crisis";
+import { getMockCrisis } from "@/lib/mock-data";
+import type { CrisisEvent } from "@/types/crisis";
 
 const GEO_REGION_MAP = [
   {
-    regionSlug: "gulf-corridor",
+    crisisSlug: "uae-airspace-closure",
     minLat: 20,
     maxLat: 30,
     minLng: 50,
     maxLng: 60,
   },
-  {
-    regionSlug: "east-rail-axis",
-    minLat: 35,
-    maxLat: 44,
-    minLng: 25,
-    maxLng: 45,
-  },
 ];
 
-function fromCoordinates(lat: number, lng: number): CrisisRegion | null {
+function fromCoordinates(lat: number, lng: number): string | null {
   const match = GEO_REGION_MAP.find(
     (region) =>
       lat >= region.minLat &&
@@ -26,47 +19,26 @@ function fromCoordinates(lat: number, lng: number): CrisisRegion | null {
       lng >= region.minLng &&
       lng <= region.maxLng,
   );
-
-  if (!match) {
-    return null;
-  }
-
-  return getMockRegion(match.regionSlug);
+  return match?.crisisSlug ?? null;
 }
 
-function fromText(location: string): CrisisRegion | null {
-  const normalized = location.trim().toLowerCase();
-  if (!normalized) {
-    return null;
+export function resolveSlug(params: {
+  slug?: string;
+  lat?: number;
+  lng?: number;
+}): string {
+  if (params.slug) return params.slug;
+
+  if (typeof params.lat === "number" && typeof params.lng === "number") {
+    const geo = fromCoordinates(params.lat, params.lng);
+    if (geo) return geo;
   }
 
-  const match = getMockRegions().find(
-    (region) =>
-      region.slug.includes(normalized) ||
-      region.name.toLowerCase().includes(normalized),
-  );
-
-  return match ?? null;
+  return "uae-airspace-closure";
 }
 
-export function resolveRegion(query: DashboardQuery): CrisisRegion {
-  if (typeof query.lat === "number" && typeof query.lng === "number") {
-    const coordinateMatch = fromCoordinates(query.lat, query.lng);
-    if (coordinateMatch) {
-      return coordinateMatch;
-    }
-  }
-
-  if (query.location) {
-    const textMatch = fromText(query.location);
-    if (textMatch) {
-      return textMatch;
-    }
-  }
-
-  if (query.region) {
-    return getMockRegion(query.region);
-  }
-
-  return getMockRegion();
+export function resolveCrisis(slug?: string): CrisisEvent {
+  const crisis = getMockCrisis(slug);
+  if (crisis) return crisis;
+  return getMockCrisis()!;
 }

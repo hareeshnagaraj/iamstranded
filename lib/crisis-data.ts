@@ -1,273 +1,290 @@
-import {
-  getMockConsular,
-  getMockExtraction,
-  getMockGroundTruth,
-  getMockRegion,
-  getMockSafeRoute,
-} from "@/lib/mock-data";
-import { resolveRegion } from "@/lib/region-resolver";
+import { getMockPayload } from "@/lib/mock-data";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type {
-  ConnectivityState,
-  ConsularContact,
-  CrisisRegion,
-  DashboardPayload,
-  DashboardQuery,
-  ExtractionOption,
-  GroundTruthUpdate,
-  OfflinePacket,
-  SafeRouteCache,
+  Airport,
+  CrisisEvent,
+  CrisisPayload,
+  EmergencyContact,
+  IntelFeedItem,
+  Route,
+  RouteLeg,
 } from "@/types/crisis";
 
 type Row = Record<string, unknown>;
 
-function mapRegionRow(row: Row): CrisisRegion {
+function mapCrisisRow(row: Row): CrisisEvent {
   return {
     id: String(row.id),
-    slug: String(row.slug ?? row.id),
-    name: String(row.name),
-    countryCode: String(row.country_code ?? "US"),
+    slug: String(row.slug),
+    title: String(row.title),
+    location: String(row.location ?? ""),
+    description: String(row.description ?? ""),
+    severity: (row.severity as CrisisEvent["severity"]) ?? "critical",
     isActive: Boolean(row.is_active ?? true),
-    priority: Number(row.priority ?? 99),
-  };
-}
-
-function mapGroundTruthRow(row: Row): GroundTruthUpdate {
-  return {
-    id: String(row.id),
-    regionId: String(row.region_id),
-    timestampUtc: String(row.timestamp_utc),
-    message: String(row.message),
-    severity: (row.severity as GroundTruthUpdate["severity"]) ?? "info",
-    sourceLabel: String(row.source_label ?? "Operator Feed"),
-  };
-}
-
-function mapExtractionRow(row: Row): ExtractionOption {
-  return {
-    id: String(row.id),
-    regionId: String(row.region_id),
-    mode: (row.mode as ExtractionOption["mode"]) ?? "bus",
-    distanceKm: Number(row.distance_km ?? 0),
-    status: (row.status as ExtractionOption["status"]) ?? "limited",
-    note: String(row.note ?? ""),
     updatedAt: String(row.updated_at ?? new Date().toISOString()),
   };
 }
 
-function mapConsularRow(row: Row): ConsularContact {
+function mapRouteLegRow(row: Row): RouteLeg {
   return {
     id: String(row.id),
-    regionId: String(row.region_id),
-    country: String(row.country),
-    primaryPhone: String(row.primary_phone),
-    secondaryPhone:
-      typeof row.secondary_phone === "string"
-        ? row.secondary_phone
-        : undefined,
-    hoursUtc: String(row.hours_utc ?? "Emergency desk"),
+    routeId: String(row.route_id),
+    legOrder: Number(row.leg_order ?? 0),
+    airportCode: String(row.airport_code),
+    airportStatus: (row.airport_status as RouteLeg["airportStatus"]) ?? "open",
+    flightCode: row.flight_code ? String(row.flight_code) : null,
+    departureTime: row.departure_time ? String(row.departure_time) : null,
   };
 }
 
-function mapSafeRouteRow(row: Row): SafeRouteCache {
+function mapRouteRow(row: Row, legs: RouteLeg[]): Route {
   return {
     id: String(row.id),
-    regionId: String(row.region_id),
-    snapshotJson: (row.snapshot_json as Record<string, unknown>) ?? {},
-    generatedAt: String(row.generated_at ?? new Date().toISOString()),
+    crisisId: String(row.crisis_id),
+    rank: Number(row.rank ?? 99),
+    title: String(row.title),
+    confidence: (row.confidence as Route["confidence"]) ?? "LOW",
+    timeEstimate: String(row.time_estimate ?? ""),
+    costRange: String(row.cost_range ?? ""),
+    warningText: row.warning_text ? String(row.warning_text) : null,
+    detail: row.detail ? String(row.detail) : null,
+    origin: String(row.origin ?? ""),
+    destination: String(row.destination ?? ""),
+    legs,
   };
 }
 
-async function resolveSupabaseRegion(
-  query: DashboardQuery,
-): Promise<CrisisRegion | null> {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return null;
-  }
-
-  let regionLookup = supabase
-    .from("crisis_regions")
-    .select("id, slug, name, country_code, is_active, priority")
-    .eq("is_active", true)
-    .order("priority", { ascending: true })
-    .limit(1);
-
-  if (query.region?.trim()) {
-    const normalized = query.region.trim();
-    regionLookup = supabase
-      .from("crisis_regions")
-      .select("id, slug, name, country_code, is_active, priority")
-      .eq("is_active", true)
-      .or(`id.eq.${normalized},slug.eq.${normalized}`)
-      .limit(1);
-  } else if (query.location?.trim()) {
-    const normalized = query.location.trim();
-    regionLookup = supabase
-      .from("crisis_regions")
-      .select("id, slug, name, country_code, is_active, priority")
-      .eq("is_active", true)
-      .ilike("name", `%${normalized}%`)
-      .order("priority", { ascending: true })
-      .limit(1);
-  } else if (typeof query.lat === "number" && typeof query.lng === "number") {
-    const mapped = resolveRegion(query);
-    regionLookup = supabase
-      .from("crisis_regions")
-      .select("id, slug, name, country_code, is_active, priority")
-      .eq("is_active", true)
-      .eq("slug", mapped.slug)
-      .limit(1);
-  }
-
-  const { data, error } = await regionLookup;
-  if (error || !data || data.length === 0) {
-    return null;
-  }
-
-  return mapRegionRow(data[0] as Row);
-}
-
-function getFallbackDashboard(query: DashboardQuery): DashboardPayload {
-  const fallbackRegion = resolveRegion(query);
-  const safeRoute = getMockSafeRoute(fallbackRegion.id);
-
+function mapAirportRow(row: Row): Airport {
   return {
-    region: fallbackRegion,
-    groundTruth: getMockGroundTruth(fallbackRegion.id),
-    extractionOptions: getMockExtraction(fallbackRegion.id),
-    consularContacts: getMockConsular(fallbackRegion.id),
-    safeRouteCache: safeRoute,
-    cacheAvailable: Boolean(safeRoute),
-    connectivityStatus: "degraded",
+    id: String(row.id),
+    crisisId: String(row.crisis_id),
+    airportCode: String(row.airport_code),
+    airportName: String(row.airport_name),
+    status: (row.status as Airport["status"]) ?? "closed",
+    statusLabel: String(row.status_label ?? "Unknown"),
+    distanceKm: Number(row.distance_km ?? 0),
   };
 }
 
-export async function getDashboardPayload(
-  query: DashboardQuery,
-): Promise<DashboardPayload> {
+function mapFeedRow(row: Row): IntelFeedItem {
+  return {
+    id: String(row.id),
+    crisisId: String(row.crisis_id),
+    category: (row.category as IntelFeedItem["category"]) ?? "flight",
+    message: String(row.message),
+    source: String(row.source ?? ""),
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+  };
+}
+
+function mapContactRow(row: Row): EmergencyContact {
+  return {
+    id: String(row.id),
+    crisisId: String(row.crisis_id),
+    name: String(row.name),
+    phone: row.phone ? String(row.phone) : null,
+    url: row.url ? String(row.url) : null,
+  };
+}
+
+export async function getCrisisPayload(
+  slug: string,
+): Promise<CrisisPayload> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return getFallbackDashboard(query);
+    return getMockPayload();
   }
 
   try {
-    const region = (await resolveSupabaseRegion(query)) ?? resolveRegion(query);
+    // Resolve crisis by slug
+    const { data: crisisRows, error: crisisErr } = await supabase
+      .from("crisis_events")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .limit(1);
 
-    const [updatesRes, extractionRes, consularRes, safeRouteRes] =
-      await Promise.all([
-        supabase
-          .from("ground_truth_updates")
-          .select(
-            "id, region_id, timestamp_utc, message, severity, source_label",
-          )
-          .eq("region_id", region.id)
-          .order("timestamp_utc", { ascending: false })
-          .limit(40),
-        supabase
-          .from("extraction_options")
-          .select("id, region_id, mode, distance_km, status, note, updated_at")
-          .eq("region_id", region.id)
-          .order("updated_at", { ascending: false })
-          .limit(20),
-        supabase
-          .from("consular_contacts")
-          .select(
-            "id, region_id, country, primary_phone, secondary_phone, hours_utc",
-          )
-          .eq("region_id", region.id)
-          .limit(10),
-        supabase
-          .from("safe_route_cache")
-          .select("id, region_id, snapshot_json, generated_at")
-          .eq("region_id", region.id)
-          .order("generated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-
-    if (
-      updatesRes.error ||
-      extractionRes.error ||
-      consularRes.error ||
-      safeRouteRes.error
-    ) {
-      return getFallbackDashboard(query);
+    if (crisisErr || !crisisRows || crisisRows.length === 0) {
+      return getMockPayload();
     }
 
-    const mappedUpdates =
-      updatesRes.data?.map((row) => mapGroundTruthRow(row as Row)) ?? [];
-    const mappedExtraction =
-      extractionRes.data?.map((row) => mapExtractionRow(row as Row)) ?? [];
-    const mappedConsular =
-      consularRes.data?.map((row) => mapConsularRow(row as Row)) ?? [];
-    const mappedSafeRoute = safeRouteRes.data
-      ? mapSafeRouteRow(safeRouteRes.data as Row)
-      : null;
+    const crisis = mapCrisisRow(crisisRows[0] as Row);
+
+    // Fetch non-route data in parallel (routes are per-search, fetched via /api/routes)
+    const [airportsRes, feedRes, contactsRes] = await Promise.all([
+      supabase
+        .from("nearby_airports")
+        .select("*")
+        .eq("crisis_id", crisis.id)
+        .order("distance_km", { ascending: true }),
+      supabase
+        .from("intel_feed")
+        .select("*")
+        .eq("crisis_id", crisis.id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("emergency_contacts")
+        .select("*")
+        .eq("crisis_id", crisis.id),
+    ]);
+
+    if (airportsRes.error || feedRes.error || contactsRes.error) {
+      return getMockPayload();
+    }
+
+    const mappedAirports = (airportsRes.data ?? []).map((r) =>
+      mapAirportRow(r as Row),
+    );
+    const mappedFeed = (feedRes.data ?? []).map((r) => mapFeedRow(r as Row));
+    const mappedContacts = (contactsRes.data ?? []).map((r) =>
+      mapContactRow(r as Row),
+    );
+
+    const mock = getMockPayload();
 
     return {
-      region,
-      groundTruth:
-        mappedUpdates.length > 0
-          ? mappedUpdates
-          : getMockGroundTruth(region.id ?? getMockRegion().id),
-      extractionOptions:
-        mappedExtraction.length > 0
-          ? mappedExtraction
-          : getMockExtraction(region.id ?? getMockRegion().id),
-      consularContacts:
-        mappedConsular.length > 0
-          ? mappedConsular
-          : getMockConsular(region.id ?? getMockRegion().id),
-      safeRouteCache: mappedSafeRoute,
-      cacheAvailable: Boolean(mappedSafeRoute),
-      connectivityStatus: "stable",
+      crisis,
+      routes: [], // Routes are fetched per-search via /api/routes
+      airports: mappedAirports.length > 0 ? mappedAirports : mock.airports,
+      feed: mappedFeed.length > 0 ? mappedFeed : mock.feed,
+      contacts: mappedContacts.length > 0 ? mappedContacts : mock.contacts,
     };
   } catch {
-    return getFallbackDashboard(query);
+    return getMockPayload();
   }
 }
 
-export async function getGroundTruthFeed(
-  query: DashboardQuery,
-): Promise<{ region: CrisisRegion; updates: GroundTruthUpdate[] }> {
-  const payload = await getDashboardPayload(query);
-  return {
-    region: payload.region,
-    updates: payload.groundTruth,
-  };
+export async function getIntelFeed(
+  slug: string,
+): Promise<{ crisis: CrisisEvent; feed: IntelFeedItem[] }> {
+  const payload = await getCrisisPayload(slug);
+  return { crisis: payload.crisis, feed: payload.feed };
+}
+
+const ROUTE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+export async function getCachedRoutes(
+  crisisId: string,
+  origin: string,
+  destination: string,
+): Promise<Route[] | null> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return null;
+
+  try {
+    const { data: routeRows, error } = await supabase
+      .from("routes")
+      .select("*")
+      .eq("crisis_id", crisisId)
+      .eq("origin", origin)
+      .eq("destination", destination)
+      .order("rank", { ascending: true });
+
+    if (error || !routeRows || routeRows.length === 0) return null;
+
+    // Check TTL — use the newest route's created_at
+    const newest = routeRows[0] as Row;
+    const createdAt = new Date(String(newest.created_at)).getTime();
+    if (Date.now() - createdAt > ROUTE_CACHE_TTL_MS) return null;
+
+    // Fetch legs for all cached routes
+    const routeIds = routeRows.map((r) => String((r as Row).id));
+    const { data: legRows } = await supabase
+      .from("route_legs")
+      .select("*")
+      .in("route_id", routeIds)
+      .order("leg_order", { ascending: true });
+
+    const allLegs = (legRows ?? []).map((r) => mapRouteLegRow(r as Row));
+    const legsByRoute = new Map<string, RouteLeg[]>();
+    for (const leg of allLegs) {
+      const existing = legsByRoute.get(leg.routeId) ?? [];
+      existing.push(leg);
+      legsByRoute.set(leg.routeId, existing);
+    }
+
+    return routeRows.map((r) => {
+      const row = r as Row;
+      return mapRouteRow(row, legsByRoute.get(String(row.id)) ?? []);
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function cacheRoutes(
+  crisisId: string,
+  origin: string,
+  destination: string,
+  routes: Route[],
+): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return;
+
+  try {
+    // Delete stale cached routes for this crisis+origin+dest
+    const { data: oldRoutes } = await supabase
+      .from("routes")
+      .select("id")
+      .eq("crisis_id", crisisId)
+      .eq("origin", origin)
+      .eq("destination", destination);
+
+    if (oldRoutes && oldRoutes.length > 0) {
+      const oldIds = oldRoutes.map((r) => String((r as Row).id));
+      // Cascade delete handles route_legs via FK
+      await supabase.from("routes").delete().in("id", oldIds);
+    }
+
+    // Insert new routes
+    for (const route of routes) {
+      const { data: inserted } = await supabase
+        .from("routes")
+        .insert({
+          crisis_id: crisisId,
+          rank: route.rank,
+          title: route.title,
+          confidence: route.confidence,
+          time_estimate: route.timeEstimate,
+          cost_range: route.costRange,
+          warning_text: route.warningText,
+          detail: route.detail,
+          origin,
+          destination,
+        })
+        .select("id")
+        .single();
+
+      if (inserted && route.legs.length > 0) {
+        await supabase.from("route_legs").insert(
+          route.legs.map((leg) => ({
+            route_id: String((inserted as Row).id),
+            leg_order: leg.legOrder,
+            airport_code: leg.airportCode,
+            airport_status: leg.airportStatus,
+            flight_code: leg.flightCode,
+            departure_time: leg.departureTime,
+          })),
+        );
+      }
+    }
+  } catch {
+    // Cache write failure is non-fatal — routes still returned to client
+  }
 }
 
 export async function getSystemStatus(
-  query: DashboardQuery,
+  slug: string,
 ): Promise<{
-  network: ConnectivityState;
-  lastRealtimeEventAt: string;
-  lastSsrRefreshAt: string;
+  crisisTitle: string;
+  isActive: boolean;
+  lastUpdate: string;
 }> {
-  const { groundTruth, connectivityStatus } = await getDashboardPayload(query);
+  const payload = await getCrisisPayload(slug);
   return {
-    network: connectivityStatus,
-    lastRealtimeEventAt:
-      groundTruth[0]?.timestampUtc ?? new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    lastSsrRefreshAt: new Date().toISOString(),
-  };
-}
-
-export async function buildOfflinePacket(
-  query: DashboardQuery,
-): Promise<OfflinePacket> {
-  const payload = await getDashboardPayload(query);
-
-  return {
-    generatedAt: new Date().toISOString(),
-    region: payload.region,
-    nationality: query.nationality?.trim().toUpperCase() || "UNKNOWN",
-    locationInput: query.location?.trim() || "unspecified",
-    connectivityStatus: payload.connectivityStatus,
-    groundTruth: payload.groundTruth,
-    extractionOptions: payload.extractionOptions,
-    consularContacts: payload.consularContacts,
-    safeRouteSnapshot: payload.safeRouteCache?.snapshotJson ?? null,
+    crisisTitle: payload.crisis.title,
+    isActive: payload.crisis.isActive,
+    lastUpdate: payload.feed[0]?.createdAt ?? new Date().toISOString(),
   };
 }

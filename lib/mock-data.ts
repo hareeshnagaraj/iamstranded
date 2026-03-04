@@ -1,222 +1,154 @@
 import type {
-  ConsularContact,
-  CrisisRegion,
-  ExtractionOption,
-  GroundTruthUpdate,
-  SafeRouteCache,
+  Airport,
+  CrisisEvent,
+  EmergencyContact,
+  IntelFeedItem,
+  Route,
+  RouteLeg,
 } from "@/types/crisis";
 
 function isoMinutesAgo(minutesAgo: number): string {
   return new Date(Date.now() - minutesAgo * 60 * 1000).toISOString();
 }
 
-const regions: CrisisRegion[] = [
+const CRISIS_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
+const crisisEvent: CrisisEvent = {
+  id: CRISIS_ID,
+  slug: "uae-airspace-closure",
+  title: "UAE & Middle East Airspace Closures",
+  location: "Dubai, UAE",
+  description:
+    "Iran strikes — 12+ airports closed across UAE, Qatar, Bahrain, Israel. ~90,000 passengers/day affected.",
+  severity: "critical",
+  isActive: true,
+  updatedAt: isoMinutesAgo(4),
+};
+
+const routeLegs: Record<string, RouteLeg[]> = {
+  "route-1": [
+    { id: "leg-1a", routeId: "route-1", legOrder: 1, airportCode: "MCT", airportStatus: "open", flightCode: "TK 773", departureTime: "22:40" },
+    { id: "leg-1b", routeId: "route-1", legOrder: 2, airportCode: "IST", airportStatus: "open", flightCode: "A3 991", departureTime: "06:15+1" },
+    { id: "leg-1c", routeId: "route-1", legOrder: 3, airportCode: "ATH", airportStatus: "open", flightCode: null, departureTime: null },
+  ],
+  "route-2": [
+    { id: "leg-2a", routeId: "route-2", legOrder: 1, airportCode: "MCT", airportStatus: "open", flightCode: "OA 264", departureTime: "01:30" },
+    { id: "leg-2b", routeId: "route-2", legOrder: 2, airportCode: "ATH", airportStatus: "open", flightCode: null, departureTime: null },
+  ],
+  "route-3": [
+    { id: "leg-3a", routeId: "route-3", legOrder: 1, airportCode: "DXB", airportStatus: "closed", flightCode: "EK 209", departureTime: "TBD" },
+    { id: "leg-3b", routeId: "route-3", legOrder: 2, airportCode: "ATH", airportStatus: "open", flightCode: null, departureTime: null },
+  ],
+};
+
+const routes: Route[] = [
   {
-    id: "region-gulf-corridor",
-    slug: "gulf-corridor",
-    name: "Gulf Evacuation Corridor",
-    countryCode: "AE",
-    isActive: true,
-    priority: 1,
+    id: "route-1",
+    crisisId: CRISIS_ID,
+    rank: 1,
+    title: "Drive to Muscat, fly via Istanbul to Athens",
+    confidence: "HIGH",
+    timeEstimate: "~18h",
+    costRange: "$450-800",
+    warningText: "Check Oman visa for Indian passport",
+    detail:
+      "Drive Al Nahda to Muscat via Hatta border (4h, less congested than Al Ain). Muscat fully operational. Turkish Airlines to Istanbul, 3h layover, Aegean morning flight to Athens. Highest-confidence: all segments operating, avoids closed airspace.",
+    origin: "Al Nahda, Dubai",
+    destination: "Athens, Greece",
+    legs: routeLegs["route-1"],
   },
   {
-    id: "region-east-rail",
-    slug: "east-rail-axis",
-    name: "Eastern Rail Axis",
-    countryCode: "TR",
-    isActive: true,
-    priority: 2,
+    id: "route-2",
+    crisisId: CRISIS_ID,
+    rank: 2,
+    title: "Drive to Muscat, direct to Athens",
+    confidence: "MEDIUM",
+    timeEstimate: "~12h",
+    costRange: "$600-1100",
+    warningText: "Limited seats — sells out fast",
+    detail:
+      "Same Muscat drive, connecting to Olympic Air direct service. Faster but limited availability. Check immediately — selling out within hours during crisis.",
+    origin: "Al Nahda, Dubai",
+    destination: "Athens, Greece",
+    legs: routeLegs["route-2"],
+  },
+  {
+    id: "route-3",
+    crisisId: CRISIS_ID,
+    rank: 3,
+    title: "Wait for DXB reopening, direct Emirates",
+    confidence: "LOW",
+    timeEstimate: "48-72h wait",
+    costRange: "$300-500",
+    warningText: "No confirmed reopening date",
+    detail:
+      "Emirates suspended until at least Tue afternoon. Earliest realistic reopening ~Mar 5 per NOTAM data. Rebooking waivers active through Mar 18, no change fees. Lowest effort, highest uncertainty.",
+    origin: "Al Nahda, Dubai",
+    destination: "Athens, Greece",
+    legs: routeLegs["route-3"],
   },
 ];
 
-const updatesByRegion: Record<string, GroundTruthUpdate[]> = {
-  "region-gulf-corridor": [
-    {
-      id: "gt-001",
-      regionId: "region-gulf-corridor",
-      timestampUtc: isoMinutesAgo(8),
-      message: "Airport shutdown confirmed across primary terminal access roads.",
-      severity: "critical",
-      sourceLabel: "Civil Aviation Desk",
-    },
-    {
-      id: "gt-002",
-      regionId: "region-gulf-corridor",
-      timestampUtc: isoMinutesAgo(15),
-      message: "Border checkpoint B2 operating at reduced throughput.",
-      severity: "warning",
-      sourceLabel: "Ground Relay",
-    },
-    {
-      id: "gt-003",
-      regionId: "region-gulf-corridor",
-      timestampUtc: isoMinutesAgo(28),
-      message: "Fuel restock completed at convoy node Delta-3.",
-      severity: "info",
-      sourceLabel: "Logistics Monitor",
-    },
-  ],
-  "region-east-rail": [
-    {
-      id: "gt-101",
-      regionId: "region-east-rail",
-      timestampUtc: isoMinutesAgo(12),
-      message: "Rail platform 4 reopened for escorted departures.",
-      severity: "warning",
-      sourceLabel: "Transit Ops",
-    },
-    {
-      id: "gt-102",
-      regionId: "region-east-rail",
-      timestampUtc: isoMinutesAgo(21),
-      message: "Road convoy lane remains operational with delays.",
-      severity: "info",
-      sourceLabel: "Route Monitor",
-    },
-  ],
-};
+const airports: Airport[] = [
+  { id: "ap-1", crisisId: CRISIS_ID, airportCode: "DXB", airportName: "Dubai International", status: "closed", statusLabel: "Closed", distanceKm: 15 },
+  { id: "ap-2", crisisId: CRISIS_ID, airportCode: "SHJ", airportName: "Sharjah International", status: "closed", statusLabel: "Closed", distanceKm: 22 },
+  { id: "ap-3", crisisId: CRISIS_ID, airportCode: "AUH", airportName: "Abu Dhabi Zayed Intl", status: "closed", statusLabel: "Closed", distanceKm: 140 },
+  { id: "ap-4", crisisId: CRISIS_ID, airportCode: "MCT", airportName: "Muscat International", status: "open", statusLabel: "Open", distanceKm: 450 },
+  { id: "ap-5", crisisId: CRISIS_ID, airportCode: "SLL", airportName: "Salalah", status: "open", statusLabel: "Open", distanceKm: 1100 },
+  { id: "ap-6", crisisId: CRISIS_ID, airportCode: "BAH", airportName: "Bahrain International", status: "warning", statusLabel: "Partial", distanceKm: 530 },
+  { id: "ap-7", crisisId: CRISIS_ID, airportCode: "DOH", airportName: "Hamad International", status: "closed", statusLabel: "Closed", distanceKm: 490 },
+];
 
-const extractionByRegion: Record<string, ExtractionOption[]> = {
-  "region-gulf-corridor": [
-    {
-      id: "ex-001",
-      regionId: "region-gulf-corridor",
-      mode: "bus",
-      distanceKm: 42,
-      status: "limited",
-      note: "Escorted departures every 30 minutes",
-      updatedAt: isoMinutesAgo(6),
-    },
-    {
-      id: "ex-002",
-      regionId: "region-gulf-corridor",
-      mode: "train",
-      distanceKm: 18,
-      status: "closed",
-      note: "Station access denied",
-      updatedAt: isoMinutesAgo(5),
-    },
-    {
-      id: "ex-003",
-      regionId: "region-gulf-corridor",
-      mode: "border",
-      distanceKm: 96,
-      status: "operational",
-      note: "Documents pre-check required",
-      updatedAt: isoMinutesAgo(14),
-    },
-  ],
-  "region-east-rail": [
-    {
-      id: "ex-101",
-      regionId: "region-east-rail",
-      mode: "bus",
-      distanceKm: 36,
-      status: "operational",
-      note: "Low seat reserve",
-      updatedAt: isoMinutesAgo(11),
-    },
-    {
-      id: "ex-102",
-      regionId: "region-east-rail",
-      mode: "border",
-      distanceKm: 74,
-      status: "limited",
-      note: "Processing queue approximately 90 minutes",
-      updatedAt: isoMinutesAgo(17),
-    },
-  ],
-};
+const feed: IntelFeedItem[] = [
+  { id: "f-1", crisisId: CRISIS_ID, category: "flight", message: "Emirates confirms DXB suspension extended to Tuesday 4 Mar afternoon. Rebooking waivers active through March 18.", source: "Emirates official, AP", createdAt: isoMinutesAgo(12) },
+  { id: "f-2", crisisId: CRISIS_ID, category: "ground", message: "Travelers reporting 3-4h drive to Muscat from Dubai via Hatta. Al Ain border less congested. Car rental limited — book now.", source: "X/Twitter aggregated (12 reports)", createdAt: isoMinutesAgo(28) },
+  { id: "f-3", crisisId: CRISIS_ID, category: "accommodation", message: "UAE government confirms hotel costs covered for stranded travelers. Contact hotel front desk to extend stay.", source: "CNN, The National", createdAt: isoMinutesAgo(45) },
+  { id: "f-4", crisisId: CRISIS_ID, category: "embassy", message: "US Embassy advises shelter in place. Register with STEP program for evacuation updates. Consular services limited hours.", source: "US State Department", createdAt: isoMinutesAgo(60) },
+  { id: "f-5", crisisId: CRISIS_ID, category: "safety", message: "Missile debris in industrial areas east of Sharjah. Avoid Al Nahda industrial zone after dark.", source: "UAE Civil Defense", createdAt: isoMinutesAgo(120) },
+];
 
-const consularByRegion: Record<string, ConsularContact[]> = {
-  "region-gulf-corridor": [
-    {
-      id: "co-001",
-      regionId: "region-gulf-corridor",
-      country: "United States",
-      primaryPhone: "+971-4-309-4000",
-      secondaryPhone: "+971-50-645-6999",
-      hoursUtc: "24/7 emergency line",
-    },
-  ],
-  "region-east-rail": [
-    {
-      id: "co-101",
-      regionId: "region-east-rail",
-      country: "United States",
-      primaryPhone: "+90-312-455-5555",
-      secondaryPhone: "+90-532-555-1221",
-      hoursUtc: "Emergency desk always staffed",
-    },
-  ],
-};
+const contacts: EmergencyContact[] = [
+  { id: "ec-1", crisisId: CRISIS_ID, name: "US Embassy UAE", phone: "+971-4-309-4000", url: null },
+  { id: "ec-2", crisisId: CRISIS_ID, name: "UK FCO", phone: "+44-20-7008-5000", url: null },
+  { id: "ec-3", crisisId: CRISIS_ID, name: "India Embassy", phone: "+971-4-397-1222", url: null },
+  { id: "ec-4", crisisId: CRISIS_ID, name: "Emirates Rebooking", phone: null, url: "https://emirates.com/rebook" },
+];
 
-const safeRouteByRegion: Record<string, SafeRouteCache> = {
-  "region-gulf-corridor": {
-    id: "sr-001",
-    regionId: "region-gulf-corridor",
-    snapshotJson: {
-      routeVersion: "2026.03.03-01",
-      checkpoints: ["Delta-3", "B2", "Harbor Spur"],
-      fuelNodes: 3,
-      medNodes: 2,
-    },
-    generatedAt: isoMinutesAgo(4),
-  },
-  "region-east-rail": {
-    id: "sr-101",
-    regionId: "region-east-rail",
-    snapshotJson: {
-      routeVersion: "2026.03.03-02",
-      checkpoints: ["Rail-4", "South Gate", "North Crossing"],
-      fuelNodes: 2,
-      medNodes: 1,
-    },
-    generatedAt: isoMinutesAgo(9),
-  },
-};
-
-export function getMockRegions(): CrisisRegion[] {
-  return regions;
-}
-
-export function getMockRegion(regionInput?: string): CrisisRegion {
-  if (!regionInput) {
-    return regions[0];
+export function getMockCrisis(slug?: string): CrisisEvent | null {
+  if (!slug || slug === crisisEvent.slug || slug === "gulf-corridor") {
+    return crisisEvent;
   }
-
-  const normalized = regionInput.toLowerCase();
-  return (
-    regions.find(
-      (item) =>
-        item.id === normalized ||
-        item.slug === normalized ||
-        item.name.toLowerCase() === normalized,
-    ) ?? regions[0]
-  );
+  return null;
 }
 
-export function getMockGroundTruth(regionId: string): GroundTruthUpdate[] {
-  return (updatesByRegion[regionId] ?? updatesByRegion["region-gulf-corridor"])
-    .slice()
-    .sort((a, b) =>
-      new Date(b.timestampUtc).getTime() - new Date(a.timestampUtc).getTime(),
-    );
+export function getMockRoutes(): Route[] {
+  return routes;
 }
 
-export function getMockExtraction(regionId: string): ExtractionOption[] {
-  return (extractionByRegion[regionId] ?? extractionByRegion["region-gulf-corridor"])
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-    );
+export function getMockAirports(): Airport[] {
+  return airports;
 }
 
-export function getMockConsular(regionId: string): ConsularContact[] {
-  return consularByRegion[regionId] ?? consularByRegion["region-gulf-corridor"];
+export function getMockFeed(): IntelFeedItem[] {
+  return feed;
 }
 
-export function getMockSafeRoute(regionId: string): SafeRouteCache | null {
-  return safeRouteByRegion[regionId] ?? safeRouteByRegion["region-gulf-corridor"];
+export function getMockContacts(): EmergencyContact[] {
+  return contacts;
+}
+
+export function getMockPayload(): {
+  crisis: CrisisEvent;
+  routes: Route[];
+  airports: Airport[];
+  feed: IntelFeedItem[];
+  contacts: EmergencyContact[];
+} {
+  return {
+    crisis: crisisEvent,
+    routes,
+    airports,
+    feed,
+    contacts,
+  };
 }
