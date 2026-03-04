@@ -13,9 +13,9 @@ export default async function CrisisPage({
   const data = await getCrisisPayload(params.id);
 
   return (
-    <div className="min-h-screen bg-surface-primary text-text-primary">
+    <div className="min-h-screen bg-obsidian text-text-primary">
       <Header />
-      <main className="mx-auto w-full max-w-[720px] px-4 py-5">
+      <main className="mx-auto w-full max-w-[960px] px-4 py-6 lg:px-6">
         <CrisisPageShell data={data} />
       </main>
       <Footer />

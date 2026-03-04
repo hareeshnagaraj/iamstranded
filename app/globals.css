@@ -4,13 +4,13 @@
 
 @layer base {
   body {
-    @apply m-0 bg-surface-primary p-0 text-text-primary;
+    @apply m-0 bg-obsidian p-0 text-text-primary;
   }
 
   *,
   ::before,
   ::after {
-    @apply border-border-subtle;
+    @apply border-neutral-800;
     box-sizing: border-box;
   }
 
@@ -34,5 +34,16 @@
 
   input::placeholder {
     @apply text-text-tertiary;
+  }
+
+  /* Brutalist scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #050505;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262626;
   }
 }

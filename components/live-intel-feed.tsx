@@ -13,11 +13,11 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { FeedCategory, IntelFeedItem } from "@/types/crisis";
 
 const categoryColor: Record<string, string> = {
-  flight: "text-status-info",
-  ground: "text-status-warning",
-  accommodation: "text-[#8B5CF6]",
-  embassy: "text-status-open",
-  safety: "text-status-closed",
+  flight: "text-blue-500",
+  ground: "text-amber-500",
+  accommodation: "text-violet-500",
+  embassy: "text-emerald-500",
+  safety: "text-red-500",
 };
 
 const categoryLabel: Record<string, string> = {
@@ -29,7 +29,7 @@ const categoryLabel: Record<string, string> = {
 };
 
 function CategoryIcon({ category }: { category: string }) {
-  const size = 14;
+  const size = 13;
   switch (category) {
     case "flight":
       return <Plane size={size} />;
@@ -103,17 +103,29 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
     filter === "all" ? feed : feed.filter((f) => f.category === filter);
 
   return (
-    <div className="mb-8">
-      <h2 className="mb-3.5 text-base font-semibold">Live Intel</h2>
-      <div className="mb-4">
+    <div>
+      <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
+        <h2 className="font-display text-lg font-bold text-text-primary">
+          Live Intel
+        </h2>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-1.5 w-1.5 animate-blink bg-emerald-500" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-neutral-600">
+            Real-time
+          </span>
+        </span>
+      </div>
+
+      <div className="mb-3">
         <FilterChips active={filter} onChange={setFilter} />
       </div>
-      <div className="rounded-lg border border-border-subtle bg-surface-secondary px-4 py-0.5">
+
+      <div className="border border-neutral-800">
         {filtered.map((item, i) => (
           <div
             key={item.id}
-            className={`py-3.5 ${
-              i < filtered.length - 1 ? "border-b border-border-subtle" : ""
+            className={`px-4 py-3.5 ${
+              i < filtered.length - 1 ? "border-b border-neutral-800" : ""
             }`}
           >
             <div className="mb-1.5 flex items-center gap-2">
@@ -121,24 +133,24 @@ export function LiveIntelFeed({ feed: initialFeed, crisisId }: LiveIntelFeedProp
                 <CategoryIcon category={item.category} />
               </span>
               <span
-                className={`text-[10px] font-semibold uppercase tracking-[0.06em] ${categoryColor[item.category]}`}
+                className={`font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${categoryColor[item.category]}`}
               >
                 {categoryLabel[item.category] ?? item.category}
               </span>
-              <span className="ml-auto font-mono text-[10px] text-text-tertiary">
+              <span className="ml-auto font-mono text-[10px] uppercase tracking-tight text-neutral-700">
                 {timeAgo(item.createdAt)}
               </span>
             </div>
-            <p className="text-[13px] leading-snug text-text-secondary">
+            <p className="text-[13px] leading-snug text-neutral-400">
               {item.message}
             </p>
-            <span className="mt-1 block text-[11px] text-text-tertiary">
+            <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.08em] text-neutral-700">
               {item.source}
             </span>
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="py-6 text-center text-sm text-text-tertiary">
+          <p className="py-6 text-center font-mono text-[11px] uppercase tracking-[0.1em] text-neutral-700">
             No updates in this category.
           </p>
         )}

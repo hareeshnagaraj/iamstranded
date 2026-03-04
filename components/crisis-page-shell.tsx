@@ -49,7 +49,7 @@ export function CrisisPageShell({ data }: { data: CrisisPayload }) {
   const showRoutes = !loading && displayRoutes !== null;
 
   return (
-    <>
+    <div className="space-y-8">
       <CrisisBanner
         crisis={data.crisis}
         origin={origin}
@@ -64,8 +64,11 @@ export function CrisisPageShell({ data }: { data: CrisisPayload }) {
       {showRoutes && <RouteList routes={displayRoutes} />}
 
       <AirportTable airports={data.airports} />
-      <LiveIntelFeed feed={data.feed} crisisId={data.crisis.id} />
-      <EmergencyContacts contacts={data.contacts} />
-    </>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <LiveIntelFeed feed={data.feed} crisisId={data.crisis.id} />
+        <EmergencyContacts contacts={data.contacts} />
+      </div>
+    </div>
   );
 }

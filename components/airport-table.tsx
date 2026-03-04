@@ -3,33 +3,57 @@ import type { Airport } from "@/types/crisis";
 
 export function AirportTable({ airports }: { airports: Airport[] }) {
   return (
-    <div className="mb-8">
-      <div className="mb-3.5 flex items-center justify-between">
-        <h2 className="text-base font-semibold">Nearby Airports</h2>
-        <span className="font-mono text-[11px] text-text-tertiary">
+    <div>
+      <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
+        <h2 className="font-display text-lg font-bold text-text-primary">
+          Airport Telemetry
+        </h2>
+        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-neutral-600">
           500km radius
         </span>
       </div>
-      <div className="rounded-lg border border-border-subtle bg-surface-secondary px-4 py-1">
-        {airports.map((airport, i) => (
-          <div
-            key={airport.id}
-            className={`flex items-center gap-3 py-2.5 ${
-              i < airports.length - 1 ? "border-b border-border-subtle" : ""
-            }`}
-          >
-            <span className="w-9 shrink-0 font-mono text-sm font-semibold text-text-primary">
-              {airport.airportCode}
-            </span>
-            <span className="flex-1 truncate text-[13px] text-text-secondary">
-              {airport.airportName}
-            </span>
-            <Badge status={airport.status} label={airport.statusLabel} />
-            <span className="w-[60px] shrink-0 text-right font-mono text-[11px] text-text-tertiary">
-              {airport.distanceKm} km
-            </span>
-          </div>
-        ))}
+      <div className="overflow-x-auto border border-neutral-800">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-neutral-800 bg-[#0A0A0A]">
+              <th className="px-4 py-2.5 text-left font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-600">
+                Code
+              </th>
+              <th className="px-4 py-2.5 text-left font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-600">
+                Name
+              </th>
+              <th className="px-4 py-2.5 text-left font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-600">
+                Status
+              </th>
+              <th className="px-4 py-2.5 text-right font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-600">
+                Distance
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {airports.map((airport, i) => (
+              <tr
+                key={airport.id}
+                className={`${
+                  i < airports.length - 1 ? "border-b border-neutral-800" : ""
+                } hover:bg-[#0A0A0A]`}
+              >
+                <td className="px-4 py-2.5 font-mono text-sm font-bold uppercase tracking-[0.08em] text-text-primary">
+                  {airport.airportCode}
+                </td>
+                <td className="px-4 py-2.5 text-[13px] text-neutral-500">
+                  {airport.airportName}
+                </td>
+                <td className="px-4 py-2.5">
+                  <Badge status={airport.status} label={airport.statusLabel} />
+                </td>
+                <td className="px-4 py-2.5 text-right font-mono text-[11px] uppercase tracking-tight text-neutral-600">
+                  {airport.distanceKm} km
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -9,11 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        "surface-primary": "#0C0C0E",
-        "surface-secondary": "#141416",
-        "surface-elevated": "#1C1C20",
-        "border-subtle": "#2A2A32",
-        "border-strong": "#3A3A44",
+        obsidian: "#050505",
+        "surface-primary": "#050505",
+        "surface-secondary": "#0A0A0A",
+        "surface-elevated": "#111111",
+        "border-subtle": "#262626",
+        "border-strong": "#404040",
         "text-primary": "#F0F0F2",
         "text-secondary": "#A0A0AA",
         "text-tertiary": "#68687A",
@@ -26,6 +27,7 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui"],
         mono: ["var(--font-jetbrains)", "ui-monospace", "SFMono-Regular"],
+        display: ["var(--font-space-grotesk)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       keyframes: {
         shimmer: {
@@ -36,10 +38,15 @@ const config: Config = {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.4" },
         },
+        blink: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0" },
+        },
       },
       animation: {
         shimmer: "shimmer 2s ease-in-out infinite",
         pulse: "pulse 2s ease-in-out infinite",
+        blink: "blink 1.4s ease-in-out infinite",
       },
     },
   },

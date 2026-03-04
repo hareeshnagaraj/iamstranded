@@ -16,15 +16,15 @@ export function FilterChips({
   onChange: (category: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1">
       {CATEGORIES.map((cat) => (
         <button
           key={cat.id}
           onClick={() => onChange(cat.id)}
-          className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+          className={`border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${
             active === cat.id
-              ? "border border-border-strong bg-surface-elevated text-text-primary"
-              : "border border-border-subtle bg-transparent text-text-tertiary hover:text-text-secondary"
+              ? "border-neutral-600 bg-[#111111] text-text-primary"
+              : "border-neutral-800 bg-transparent text-neutral-600 hover:text-neutral-400"
           }`}
         >
           {cat.label}
