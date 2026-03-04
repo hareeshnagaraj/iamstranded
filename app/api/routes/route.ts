@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCachedRoutes, cacheRoutes } from "@/lib/crisis-data";
-import { getMockRoutes } from "@/lib/mock-data";
+import { getCachedRoutes, cacheRoutes, getCrisisContext } from "@/lib/crisis-data";
+import { generateRoutes } from "@/lib/generate-routes";
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
@@ -24,18 +24,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 2. Cache miss — generate routes (v0: mock data with origin/dest attached)
-  const mockRoutes = getMockRoutes().map((r) => ({
-    ...r,
-    origin,
-    destination,
-  }));
+  // 2. Cache miss — fetch crisis context and generate routes via Claude API
+  const { crisis, airports, feed } = await getCrisisContext(crisisId);
+  const routes = await generateRoutes(crisis, airports, feed, origin, destination);
 
   // 3. Store in cache (fire-and-forget — don't block response)
-  cacheRoutes(crisisId, origin, destination, mockRoutes).catch(() => {});
+  cacheRoutes(crisisId, origin, destination, routes).catch(() => {});
 
   return NextResponse.json(
-    { routes: mockRoutes, generatedAt: new Date().toISOString(), cached: false },
+    { routes, generatedAt: new Date().toISOString(), cached: false },
     { headers: { "Cache-Control": "no-store, max-age=0" } },
   );
 }

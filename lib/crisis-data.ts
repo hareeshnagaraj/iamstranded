@@ -274,6 +274,57 @@ export async function cacheRoutes(
   }
 }
 
+export async function getCrisisContext(
+  crisisId: string,
+): Promise<{ crisis: CrisisEvent; airports: Airport[]; feed: IntelFeedItem[] }> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    const mock = getMockPayload();
+    return { crisis: mock.crisis, airports: mock.airports, feed: mock.feed };
+  }
+
+  try {
+    const [crisisRes, airportsRes, feedRes] = await Promise.all([
+      supabase.from("crisis_events").select("*").eq("id", crisisId).limit(1),
+      supabase
+        .from("nearby_airports")
+        .select("*")
+        .eq("crisis_id", crisisId)
+        .order("distance_km", { ascending: true }),
+      supabase
+        .from("intel_feed")
+        .select("*")
+        .eq("crisis_id", crisisId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+    if (
+      crisisRes.error ||
+      !crisisRes.data?.length ||
+      airportsRes.error ||
+      feedRes.error
+    ) {
+      const mock = getMockPayload();
+      return { crisis: mock.crisis, airports: mock.airports, feed: mock.feed };
+    }
+
+    const crisis = mapCrisisRow(crisisRes.data[0] as Row);
+    const airports = (airportsRes.data ?? []).map((r) => mapAirportRow(r as Row));
+    const feed = (feedRes.data ?? []).map((r) => mapFeedRow(r as Row));
+
+    const mock = getMockPayload();
+    return {
+      crisis,
+      airports: airports.length > 0 ? airports : mock.airports,
+      feed: feed.length > 0 ? feed : mock.feed,
+    };
+  } catch {
+    const mock = getMockPayload();
+    return { crisis: mock.crisis, airports: mock.airports, feed: mock.feed };
+  }
+}
+
 export async function getSystemStatus(
   slug: string,
 ): Promise<{
