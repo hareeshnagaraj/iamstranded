@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     crisis: payload.crisis,
     routes: payload.routes,
     airports: payload.airports,
+    lodging: payload.lodging,
     feed: payload.feed,
     contacts: payload.contacts,
   };

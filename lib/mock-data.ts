@@ -3,6 +3,7 @@ import type {
   CrisisEvent,
   EmergencyContact,
   IntelFeedItem,
+  Lodging,
   Route,
   RouteLeg,
 } from "@/types/crisis";
@@ -99,6 +100,15 @@ const airports: Airport[] = [
   { id: "ap-7", crisisId: CRISIS_ID, airportCode: "DOH", airportName: "Hamad International", status: "closed", statusLabel: "Closed", distanceKm: 490, latitude: 25.2731, longitude: 51.6081 },
 ];
 
+const lodging: Lodging[] = [
+  { id: "lg-1", crisisId: CRISIS_ID, name: "JW Marriott Deira", status: "full", statusLabel: "Full", availableRooms: 0, priceRange: "$200-280/night", distanceKm: 8, latitude: 25.2716, longitude: 55.3280, notes: "Standby list only" },
+  { id: "lg-2", crisisId: CRISIS_ID, name: "Arabian Court Hotel", status: "limited", statusLabel: "Limited", availableRooms: 3, priceRange: "$120-180/night", distanceKm: 12, latitude: 25.2230, longitude: 55.2990, notes: "Gov't subsidy for expat workers" },
+  { id: "lg-3", crisisId: CRISIS_ID, name: "Deira Twin Towers", status: "available", statusLabel: "Available", availableRooms: 45, priceRange: "$140-220/night", distanceKm: 14, latitude: 25.2680, longitude: 55.3350, notes: "Accepting new bookings" },
+  { id: "lg-4", crisisId: CRISIS_ID, name: "Al Manara Emergency Shelter", status: "shelter", statusLabel: "Shelter", availableRooms: 25, priceRange: "Free", distanceKm: 18, latitude: 25.2500, longitude: 55.3100, notes: "UAE cabinet — register with passport" },
+  { id: "lg-5", crisisId: CRISIS_ID, name: "Sharjah Rotana", status: "available", statusLabel: "Available", availableRooms: 60, priceRange: "$95-150/night", distanceKm: 28, latitude: 25.3380, longitude: 55.3900, notes: "Budget option, full amenities" },
+  { id: "lg-6", crisisId: CRISIS_ID, name: "RAK Beach Resort", status: "available", statusLabel: "Available", availableRooms: 120, priceRange: "$80-140/night", distanceKm: 140, latitude: 25.7890, longitude: 55.9430, notes: "Remote, cheapest, 2.5h drive" },
+];
+
 const feed: IntelFeedItem[] = [
   { id: "f-1", crisisId: CRISIS_ID, category: "flight", message: "Emirates confirms DXB suspension extended to Tuesday 4 Mar afternoon. Rebooking waivers active through March 18.", source: "Emirates official, AP", sourceUrl: "https://www.emirates.com/notices", createdAt: isoMinutesAgo(12) },
   { id: "f-2", crisisId: CRISIS_ID, category: "ground", message: "Travelers reporting 3-4h drive to Muscat from Dubai via Hatta. Al Ain border less congested. Car rental limited — book now.", source: "X/Twitter aggregated (12 reports)", sourceUrl: null, createdAt: isoMinutesAgo(28) },
@@ -137,10 +147,15 @@ export function getMockContacts(): EmergencyContact[] {
   return contacts;
 }
 
+export function getMockLodging(): Lodging[] {
+  return lodging;
+}
+
 export function getMockPayload(): {
   crisis: CrisisEvent;
   routes: Route[];
   airports: Airport[];
+  lodging: Lodging[];
   feed: IntelFeedItem[];
   contacts: EmergencyContact[];
 } {
@@ -148,6 +163,7 @@ export function getMockPayload(): {
     crisis: crisisEvent,
     routes,
     airports,
+    lodging,
     feed,
     contacts,
   };

@@ -72,7 +72,26 @@ create table if not exists public.nearby_airports (
 create index if not exists nearby_airports_crisis_idx
   on public.nearby_airports (crisis_id);
 
--- 5. Categorized live updates (realtime)
+-- 5. Nearby lodging / shelters
+create table if not exists public.nearby_lodging (
+  id uuid primary key default gen_random_uuid(),
+  crisis_id uuid not null references public.crisis_events(id) on delete cascade,
+  name text not null,
+  status text not null check (status in ('available', 'limited', 'full', 'closed', 'shelter')),
+  status_label text not null,
+  available_rooms integer,
+  price_range text,
+  distance_km integer not null,
+  latitude double precision not null default 0,
+  longitude double precision not null default 0,
+  notes text,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists nearby_lodging_crisis_idx
+  on public.nearby_lodging (crisis_id);
+
+-- 6. Categorized live updates (realtime)
 create table if not exists public.intel_feed (
   id uuid primary key default gen_random_uuid(),
   crisis_id uuid not null references public.crisis_events(id) on delete cascade,
@@ -86,7 +105,7 @@ create table if not exists public.intel_feed (
 create index if not exists intel_feed_crisis_ts_idx
   on public.intel_feed (crisis_id, created_at desc);
 
--- 6. Emergency contacts
+-- 7. Emergency contacts
 create table if not exists public.emergency_contacts (
   id uuid primary key default gen_random_uuid(),
   crisis_id uuid not null references public.crisis_events(id) on delete cascade,
@@ -104,6 +123,7 @@ alter table public.crisis_events enable row level security;
 alter table public.routes enable row level security;
 alter table public.route_legs enable row level security;
 alter table public.nearby_airports enable row level security;
+alter table public.nearby_lodging enable row level security;
 alter table public.intel_feed enable row level security;
 alter table public.emergency_contacts enable row level security;
 
@@ -123,6 +143,10 @@ create policy "public read route_legs"
 drop policy if exists "public read nearby_airports" on public.nearby_airports;
 create policy "public read nearby_airports"
   on public.nearby_airports for select to anon using (true);
+
+drop policy if exists "public read nearby_lodging" on public.nearby_lodging;
+create policy "public read nearby_lodging"
+  on public.nearby_lodging for select to anon using (true);
 
 drop policy if exists "public read intel_feed" on public.intel_feed;
 create policy "public read intel_feed"

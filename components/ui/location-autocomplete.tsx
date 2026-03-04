@@ -7,6 +7,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 interface NominatimResult {
   place_id: number;
   display_name: string;
+  lat: string;
+  lon: string;
 }
 
 export function LocationAutocomplete({
@@ -16,7 +18,7 @@ export function LocationAutocomplete({
   icon: Icon,
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, coords?: { lat: number; lon: number }) => void;
   placeholder: string;
   icon: LucideIcon;
 }) {
@@ -26,6 +28,7 @@ export function LocationAutocomplete({
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const skipNextFetch = useRef(false);
   const debounced = useDebounce(query, 300);
 
   // Sync external value changes (e.g. geolocation auto-fill)
@@ -35,6 +38,11 @@ export function LocationAutocomplete({
 
   // Fetch suggestions when debounced query changes
   useEffect(() => {
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      return;
+    }
+
     if (debounced.length < 3) {
       setResults([]);
       setOpen(false);
@@ -67,9 +75,13 @@ export function LocationAutocomplete({
   }, [debounced]);
 
   const select = useCallback(
-    (displayName: string) => {
-      setQuery(displayName);
-      onChange(displayName);
+    (result: NominatimResult) => {
+      skipNextFetch.current = true;
+      setQuery(result.display_name);
+      onChange(result.display_name, {
+        lat: parseFloat(result.lat),
+        lon: parseFloat(result.lon),
+      });
       setOpen(false);
       setResults([]);
     },
@@ -87,7 +99,7 @@ export function LocationAutocomplete({
       setActiveIndex((i) => (i > 0 ? i - 1 : results.length - 1));
     } else if (e.key === "Enter" && activeIndex >= 0) {
       e.preventDefault();
-      select(results[activeIndex].display_name);
+      select(results[activeIndex]);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
@@ -124,7 +136,7 @@ export function LocationAutocomplete({
           {results.map((r, i) => (
             <li
               key={r.place_id}
-              onMouseDown={() => select(r.display_name)}
+              onMouseDown={() => select(r)}
               onMouseEnter={() => setActiveIndex(i)}
               className={`cursor-pointer px-3 py-2 font-mono text-sm text-text-primary ${
                 i === activeIndex ? "bg-neutral-900" : ""

@@ -95,6 +95,16 @@ values
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'embassy', 'US Embassy advises shelter in place. Register with STEP program for evacuation updates. Consular services limited hours.', 'US State Department', 'https://travel.state.gov/uae'),
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'safety', 'Missile debris in industrial areas east of Sharjah. Avoid Al Nahda industrial zone after dark.', 'UAE Civil Defense', null);
 
+-- Nearby lodging (6)
+insert into public.nearby_lodging (crisis_id, name, status, status_label, available_rooms, price_range, distance_km, latitude, longitude, notes)
+values
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'JW Marriott Deira', 'full', 'Full', 0, '$200-280/night', 8, 25.2716, 55.3280, 'Standby list only'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Arabian Court Hotel', 'limited', 'Limited', 3, '$120-180/night', 12, 25.2230, 55.2990, 'Gov''t subsidy for expat workers'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Deira Twin Towers', 'available', 'Available', 45, '$140-220/night', 14, 25.2680, 55.3350, 'Accepting new bookings'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Al Manara Emergency Shelter', 'shelter', 'Shelter', 25, 'Free', 18, 25.2500, 55.3100, 'UAE cabinet — register with passport'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Sharjah Rotana', 'available', 'Available', 60, '$95-150/night', 28, 25.3380, 55.3900, 'Budget option, full amenities'),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'RAK Beach Resort', 'available', 'Available', 120, '$80-140/night', 140, 25.7890, 55.9430, 'Remote, cheapest, 2.5h drive');
+
 -- Emergency contacts (4)
 insert into public.emergency_contacts (crisis_id, name, phone, url)
 values

@@ -71,10 +71,27 @@ export interface EmergencyContact {
   url: string | null;
 }
 
+export type LodgingStatus = "available" | "limited" | "full" | "closed" | "shelter";
+
+export interface Lodging {
+  id: string;
+  crisisId: string;
+  name: string;
+  status: LodgingStatus;
+  statusLabel: string;
+  availableRooms: number | null;
+  priceRange: string | null;
+  distanceKm: number;
+  latitude: number;
+  longitude: number;
+  notes: string | null;
+}
+
 export interface CrisisPayload {
   crisis: CrisisEvent;
   routes: Route[];
   airports: Airport[];
+  lodging: Lodging[];
   feed: IntelFeedItem[];
   contacts: EmergencyContact[];
 }

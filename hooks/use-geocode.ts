@@ -26,6 +26,9 @@ export function useGeocode(location: string): LatLon | null {
       return;
     }
 
+    // Clear stale coords while debouncing
+    setCoords(null);
+
     // Debounce
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {

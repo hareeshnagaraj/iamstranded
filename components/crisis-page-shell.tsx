@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CrisisBanner } from "@/components/crisis-banner";
 import { LoadingShimmer } from "@/components/loading-shimmer";
 import { RouteList } from "@/components/route-list";
 import { AirportTable } from "@/components/airport-table";
+import { LodgingTable } from "@/components/lodging-table";
 import { EmergencyContacts } from "@/components/emergency-contacts";
 import { NearbyAirportsProvider } from "@/components/nearby-airports-provider";
 import { useGeocode } from "@/hooks/use-geocode";
@@ -13,12 +14,14 @@ import type {
   Airport,
   CrisisEvent,
   EmergencyContact,
+  Lodging,
   Route,
 } from "@/types/crisis";
 
 interface ShellData {
   crisis: CrisisEvent;
   airports: Airport[];
+  lodging: Lodging[];
   contacts: EmergencyContact[];
 }
 
@@ -33,6 +36,7 @@ export function CrisisPageShell({
   const [destination, setDestination] = useState("Athens, Greece");
   const [loading, setLoading] = useState(false);
   const [searchRoutes, setSearchRoutes] = useState<Route[] | null>(null);
+  const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   // Auto-detect user location via browser geolocation
   useEffect(() => {
@@ -94,8 +98,21 @@ export function CrisisPageShell({
     }
   };
 
-  // Geocode origin for user-relative distances
-  const userCoords = useGeocode(origin);
+  // Geocode origin as fallback (only used when user types manually)
+  const geocodedCoords = useGeocode(origin);
+
+  // Direct coords (from autocomplete selection) take priority over geocoded
+  const userCoords = originCoords ?? geocodedCoords;
+
+  const onOriginChange = useCallback(
+    (value: string, coords?: { lat: number; lon: number }) => {
+      setOrigin(value);
+      // When coords provided (autocomplete selection), use them directly.
+      // When not (manual typing), clear so useGeocode takes over.
+      setOriginCoords(coords ?? null);
+    },
+    [],
+  );
 
   // Compute user-relative distances and sort airports
   const sortedAirports = useMemo(() => {
@@ -111,6 +128,20 @@ export function CrisisPageShell({
 
     return withUserDistance.sort((a, b) => a.userDistanceKm - b.userDistanceKm);
   }, [data.airports, userCoords]);
+
+  // Compute user-relative distances and sort lodging
+  const sortedLodging = useMemo(() => {
+    if (!userCoords) return data.lodging;
+
+    return data.lodging
+      .map((l) => ({
+        ...l,
+        userDistanceKm: Math.round(
+          haversineKm(userCoords.lat, userCoords.lon, l.latitude, l.longitude),
+        ),
+      }))
+      .sort((a, b) => a.userDistanceKm - b.userDistanceKm);
+  }, [data.lodging, userCoords]);
 
   // Top 3 nearest airport codes for "Near you" feed matching
   const nearbyAirportCodes = useMemo(() => {
@@ -137,7 +168,7 @@ export function CrisisPageShell({
             origin={origin}
             destination={destination}
             loading={loading}
-            onOriginChange={setOrigin}
+            onOriginChange={onOriginChange}
             onDestinationChange={setDestination}
             onSearch={handleSearch}
           />
@@ -147,6 +178,11 @@ export function CrisisPageShell({
 
           <AirportTable
             airports={sortedAirports}
+            origin={userCoords ? origin : null}
+          />
+
+          <LodgingTable
+            lodging={sortedLodging}
             origin={userCoords ? origin : null}
           />
 

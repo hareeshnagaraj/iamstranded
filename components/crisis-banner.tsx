@@ -17,8 +17,8 @@ export function CrisisBanner({
   origin: string;
   destination: string;
   loading: boolean;
-  onOriginChange: (value: string) => void;
-  onDestinationChange: (value: string) => void;
+  onOriginChange: (value: string, coords?: { lat: number; lon: number }) => void;
+  onDestinationChange: (value: string, coords?: { lat: number; lon: number }) => void;
   onSearch: () => void;
 }) {
   return (
