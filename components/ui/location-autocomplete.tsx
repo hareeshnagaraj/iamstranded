@@ -14,11 +14,13 @@ interface NominatimResult {
 export function LocationAutocomplete({
   value,
   onChange,
+  onAutoGeocode,
   placeholder,
   icon: Icon,
 }: {
   value: string;
   onChange: (value: string, coords?: { lat: number; lon: number }) => void;
+  onAutoGeocode?: (coords: { lat: number; lon: number }) => void;
   placeholder: string;
   icon: LucideIcon;
 }) {
@@ -63,6 +65,13 @@ export function LocationAutocomplete({
         setResults(data);
         setOpen(data.length > 0);
         setActiveIndex(-1);
+        // Auto-geocode from first result — one Nominatim request serves both purposes
+        if (data.length > 0 && onAutoGeocode) {
+          onAutoGeocode({
+            lat: parseFloat(data[0].lat),
+            lon: parseFloat(data[0].lon),
+          });
+        }
       } catch {
         // Graceful degradation — input still works as plain text
       }
@@ -72,7 +81,7 @@ export function LocationAutocomplete({
     return () => {
       cancelled = true;
     };
-  }, [debounced]);
+  }, [debounced, onAutoGeocode]);
 
   const select = useCallback(
     (result: NominatimResult) => {

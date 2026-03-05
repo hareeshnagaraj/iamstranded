@@ -197,12 +197,13 @@ export async function getCrisisShellData(
   crisis: CrisisEvent;
   airports: Airport[];
   lodging: Lodging[];
+  feed: IntelFeedItem[];
   contacts: EmergencyContact[];
 }> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     const mock = getMockPayload();
-    return { crisis: mock.crisis, airports: mock.airports, lodging: mock.lodging, contacts: mock.contacts };
+    return { crisis: mock.crisis, airports: mock.airports, lodging: mock.lodging, feed: mock.feed, contacts: mock.contacts };
   }
 
   try {
@@ -215,12 +216,12 @@ export async function getCrisisShellData(
 
     if (crisisErr || !crisisRows || crisisRows.length === 0) {
       const mock = getMockPayload();
-      return { crisis: mock.crisis, airports: mock.airports, lodging: mock.lodging, contacts: mock.contacts };
+      return { crisis: mock.crisis, airports: mock.airports, lodging: mock.lodging, feed: mock.feed, contacts: mock.contacts };
     }
 
     const crisis = mapCrisisRow(crisisRows[0] as Row);
 
-    const [airportsRes, lodgingRes, contactsRes] = await Promise.all([
+    const [airportsRes, lodgingRes, feedRes, contactsRes] = await Promise.all([
       supabase
         .from("nearby_airports")
         .select("*")
@@ -231,6 +232,12 @@ export async function getCrisisShellData(
         .select("*")
         .eq("crisis_id", crisis.id)
         .order("distance_km", { ascending: true }),
+      supabase
+        .from("intel_feed")
+        .select("*")
+        .eq("crisis_id", crisis.id)
+        .order("created_at", { ascending: false })
+        .limit(50),
       supabase
         .from("emergency_contacts")
         .select("*")
@@ -244,6 +251,9 @@ export async function getCrisisShellData(
     const mappedLodging = lodgingRes.error
       ? mock.lodging
       : (lodgingRes.data ?? []).map((r) => mapLodgingRow(r as Row));
+    const mappedFeed = feedRes.error
+      ? mock.feed
+      : (feedRes.data ?? []).map((r) => mapFeedRow(r as Row));
     const mappedContacts = contactsRes.error
       ? mock.contacts
       : (contactsRes.data ?? []).map((r) => mapContactRow(r as Row));
@@ -252,11 +262,12 @@ export async function getCrisisShellData(
       crisis,
       airports: mappedAirports.length > 0 ? mappedAirports : mock.airports,
       lodging: mappedLodging.length > 0 ? mappedLodging : mock.lodging,
+      feed: mappedFeed.length > 0 ? mappedFeed : mock.feed,
       contacts: mappedContacts.length > 0 ? mappedContacts : mock.contacts,
     };
   } catch {
     const mock = getMockPayload();
-    return { crisis: mock.crisis, airports: mock.airports, lodging: mock.lodging, contacts: mock.contacts };
+    return { crisis: mock.crisis, airports: mock.airports, lodging: mock.lodging, feed: mock.feed, contacts: mock.contacts };
   }
 }
 

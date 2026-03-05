@@ -7,13 +7,14 @@ import { RouteList } from "@/components/route-list";
 import { AirportTable } from "@/components/airport-table";
 import { LodgingTable } from "@/components/lodging-table";
 import { EmergencyContacts } from "@/components/emergency-contacts";
+import { LiveIntelFeed } from "@/components/live-intel-feed";
 import { NearbyAirportsProvider } from "@/components/nearby-airports-provider";
-import { useGeocode } from "@/hooks/use-geocode";
 import { haversineKm } from "@/lib/geo";
 import type {
   Airport,
   CrisisEvent,
   EmergencyContact,
+  IntelFeedItem,
   Lodging,
   Route,
 } from "@/types/crisis";
@@ -22,15 +23,14 @@ interface ShellData {
   crisis: CrisisEvent;
   airports: Airport[];
   lodging: Lodging[];
+  feed: IntelFeedItem[];
   contacts: EmergencyContact[];
 }
 
 export function CrisisPageShell({
   data,
-  children,
 }: {
   data: ShellData;
-  children: React.ReactNode;
 }) {
   const [origin, setOrigin] = useState("Al Nahda, Dubai");
   const [destination, setDestination] = useState("Athens, Greece");
@@ -98,18 +98,22 @@ export function CrisisPageShell({
     }
   };
 
-  // Geocode origin as fallback (only used when user types manually)
-  const geocodedCoords = useGeocode(origin);
-
-  // Direct coords (from autocomplete selection) take priority over geocoded
-  const userCoords = originCoords ?? geocodedCoords;
+  const userCoords = originCoords;
 
   const onOriginChange = useCallback(
     (value: string, coords?: { lat: number; lon: number }) => {
       setOrigin(value);
       // When coords provided (autocomplete selection), use them directly.
-      // When not (manual typing), clear so useGeocode takes over.
+      // When not (manual typing), clear — autocomplete's onAutoGeocode will provide coords.
       setOriginCoords(coords ?? null);
+    },
+    [],
+  );
+
+  // Coords from autocomplete search results (first hit) — no separate Nominatim call needed
+  const onOriginAutoGeocode = useCallback(
+    (coords: { lat: number; lon: number }) => {
+      setOriginCoords(coords);
     },
     [],
   );
@@ -156,9 +160,9 @@ export function CrisisPageShell({
   return (
     <NearbyAirportsProvider codes={nearbyAirportCodes}>
       <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-        {/* LEFT: Live Intel — sticky scrollable sidebar (streamed via Suspense) */}
+        {/* LEFT: Live Intel — sticky scrollable sidebar */}
         <div className="flex flex-col max-h-[60vh] overflow-hidden lg:sticky lg:top-4 lg:self-start lg:w-[380px] lg:shrink-0 lg:max-h-[calc(100vh-2rem)]">
-          {children}
+          <LiveIntelFeed feed={data.feed} crisisId={data.crisis.id} />
         </div>
 
         {/* RIGHT: Everything else — scrolls normally */}
@@ -169,6 +173,7 @@ export function CrisisPageShell({
             destination={destination}
             loading={loading}
             onOriginChange={onOriginChange}
+            onOriginAutoGeocode={onOriginAutoGeocode}
             onDestinationChange={setDestination}
             onSearch={handleSearch}
           />

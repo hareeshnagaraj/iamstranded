@@ -10,6 +10,7 @@ export function CrisisBanner({
   destination,
   loading,
   onOriginChange,
+  onOriginAutoGeocode,
   onDestinationChange,
   onSearch,
 }: {
@@ -18,6 +19,7 @@ export function CrisisBanner({
   destination: string;
   loading: boolean;
   onOriginChange: (value: string, coords?: { lat: number; lon: number }) => void;
+  onOriginAutoGeocode?: (coords: { lat: number; lon: number }) => void;
   onDestinationChange: (value: string, coords?: { lat: number; lon: number }) => void;
   onSearch: () => void;
 }) {
@@ -50,6 +52,7 @@ export function CrisisBanner({
           <LocationAutocomplete
             value={origin}
             onChange={onOriginChange}
+            onAutoGeocode={onOriginAutoGeocode}
             placeholder="Your location"
             icon={MapPin}
           />
