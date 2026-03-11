@@ -77,8 +77,8 @@ export interface Lodging {
   id: string;
   crisisId: string;
   name: string;
-  status: LodgingStatus;
-  statusLabel: string;
+  status: LodgingStatus | null;
+  statusLabel: string | null;
   availableRooms: number | null;
   priceRange: string | null;
   distanceKm: number;

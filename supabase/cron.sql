@@ -1,14 +1,19 @@
--- iamstranded — pg_cron setup for AI feed generation
--- Run this SQL in the Supabase SQL Editor (Dashboard > SQL Editor)
--- Requires: pg_cron, pg_net, and Vault extensions (enabled by default on Supabase hosted)
+-- iamstranded — pg_cron setup (DEPRECATED)
+-- Feed generation is now on-demand via /api/feed/generate (triggered when users visit the page).
+-- This eliminates the ~$13/day cost from 30-second cron invocations.
 
--- 1. Store project URL and anon key in Vault for cron access
--- Replace YOUR_ANON_KEY_HERE with your actual anon key from Supabase dashboard
+-- Unschedule the old cron job if it exists:
+select cron.unschedule('generate-intel-feed');
+
+-- The previous cron schedule is preserved below for reference only.
+-- DO NOT re-enable — use the on-demand approach instead.
+
+/*
+-- OLD: Store project URL and anon key in Vault for cron access
 select vault.create_secret('https://lfljoxhdtndnfybfowor.supabase.co', 'project_url');
 select vault.create_secret('YOUR_ANON_KEY_HERE', 'anon_key');
 
--- 2. Schedule: invoke Edge Function every 30 seconds
--- Requires Postgres >= 15.1.1.61 for sub-minute scheduling (Supabase hosted supports this)
+-- OLD: Schedule invoke Edge Function every 30 seconds (~2,880 calls/day)
 select cron.schedule(
   'generate-intel-feed',
   '30 seconds',
@@ -25,9 +30,7 @@ select cron.schedule(
   ) as request_id;
   $$
 );
+*/
 
 -- To check cron execution history:
 -- select * from cron.job_run_details order by start_time desc limit 20;
-
--- To unschedule:
--- select cron.unschedule('generate-intel-feed');

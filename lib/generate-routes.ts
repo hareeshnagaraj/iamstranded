@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type {
   Airport,
   CrisisEvent,
@@ -27,10 +27,12 @@ interface GeneratedRoute {
   legs: GeneratedLeg[];
 }
 
-function buildSystemPrompt(
+function buildPrompt(
   crisis: CrisisEvent,
   airports: Airport[],
   feed: IntelFeedItem[],
+  origin: string,
+  destination: string,
 ): string {
   const airportTable = airports
     .map(
@@ -59,33 +61,34 @@ ${airportTable}
 LATEST INTEL:
 ${feedItems}
 
-INSTRUCTIONS:
-- Generate exactly 3 ranked escape routes from the user's origin to their destination.
-- Routes should be realistic given the airport statuses and crisis situation.
-- Rank 1 = highest confidence / most recommended. Rank 3 = fallback / riskiest.
-- Each route must have legs — the airports the traveler passes through (including origin and final destination airports).
-- Include realistic flight codes (airline code + 3 digits), departure times, and cost estimates.
-- warningText should flag visa issues, availability concerns, or safety risks. Use null if none.
-- detail should be 2-3 sentences explaining the route strategy.
-- For closed airports, you may include a "wait for reopening" route as rank 3.
+TASK: Generate 3 ranked escape routes from "${origin}" to "${destination}".
 
-RESPOND WITH ONLY a JSON array (no markdown fences, no explanation) matching this schema:
+RULES:
+- Route 1 = highest confidence / most recommended. Route 3 = fallback / riskiest.
+- Each route has legs — the airports the traveler passes through (including origin departure and final destination airports).
+- Use realistic flight codes (airline code + 3 digits), departure times, and cost estimates.
+- warningText: flag visa issues, availability concerns, or safety risks. null if none.
+- detail: 2-3 sentences explaining the route strategy.
+- For closed airports, you may include a "wait for reopening" route as route 3.
+- Keep titles SHORT (under 60 chars). Keep detail to 2-3 sentences max.
+
+RESPOND WITH ONLY a valid JSON array — no markdown fences, no explanation, no text before or after:
 [
   {
     "rank": 1,
-    "title": "string — short route description",
-    "confidence": "HIGH" | "MEDIUM" | "LOW",
-    "timeEstimate": "string — e.g. ~18h",
-    "costRange": "string — e.g. $450-800",
-    "warningText": "string | null",
-    "detail": "string | null — 2-3 sentence explanation",
+    "title": "short route description",
+    "confidence": "HIGH",
+    "timeEstimate": "~18h",
+    "costRange": "$450-800",
+    "warningText": "string or null",
+    "detail": "2-3 sentence explanation",
     "legs": [
       {
         "legOrder": 1,
-        "airportCode": "string — IATA code",
-        "airportStatus": "open" | "warning" | "closed",
-        "flightCode": "string | null — e.g. TK 773",
-        "departureTime": "string | null — e.g. 22:40"
+        "airportCode": "XXX",
+        "airportStatus": "open",
+        "flightCode": "TK 773",
+        "departureTime": "22:40"
       }
     ]
   }
@@ -93,14 +96,10 @@ RESPOND WITH ONLY a JSON array (no markdown fences, no explanation) matching thi
 }
 
 function extractJSON(text: string): string {
-  // Strip markdown code fences if present
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenced) return fenced[1].trim();
-
-  // Try to find a JSON array directly
   const arrayMatch = text.match(/\[[\s\S]*\]/);
   if (arrayMatch) return arrayMatch[0];
-
   return text.trim();
 }
 
@@ -125,45 +124,31 @@ export async function generateRoutes(
   origin: string,
   destination: string,
 ): Promise<Route[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) {
     return fallbackMockRoutes(crisis.id, origin, destination);
   }
 
   try {
-    const client = new Anthropic({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      system: buildSystemPrompt(crisis, airports, feed),
-      messages: [
-        {
-          role: "user",
-          content: `Find 3 ranked routes from ${origin} to ${destination}.`,
-        },
-      ],
-    });
+    const prompt = buildPrompt(crisis, airports, feed, origin, destination);
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
-    const textBlock = message.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      return fallbackMockRoutes(crisis.id, origin, destination);
-    }
-
-    const jsonStr = extractJSON(textBlock.text);
+    const jsonStr = extractJSON(text);
     const parsed: unknown = JSON.parse(jsonStr);
 
     if (!Array.isArray(parsed) || parsed.length === 0) {
       return fallbackMockRoutes(crisis.id, origin, destination);
     }
 
-    // Validate each route
     const validRoutes = parsed.filter(isValidRoute);
     if (validRoutes.length === 0) {
       return fallbackMockRoutes(crisis.id, origin, destination);
     }
 
-    // Map into Route[] with generated IDs
     return validRoutes.map((gr) => {
       const routeId = crypto.randomUUID();
       const legs: RouteLeg[] = gr.legs.map((gl) => ({

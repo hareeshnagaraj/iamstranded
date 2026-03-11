@@ -80,7 +80,11 @@ export function LodgingTable({ lodging, origin }: LodgingTableProps) {
                   )}
                 </td>
                 <td className="px-4 py-2.5">
-                  <LodgingBadge status={l.status} label={l.statusLabel} />
+                  {l.status && l.statusLabel ? (
+                    <LodgingBadge status={l.status} label={l.statusLabel} />
+                  ) : (
+                    <span className="font-mono text-[10px] text-neutral-600">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-2.5 text-right font-mono text-[11px] tracking-tight text-neutral-500">
                   {l.availableRooms != null ? l.availableRooms : "—"}

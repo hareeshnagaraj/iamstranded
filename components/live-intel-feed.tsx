@@ -70,6 +70,15 @@ export function LiveIntelFeed({
   const [feed, setFeed] = useState(initialFeed);
   const [filter, setFilter] = useState("all");
 
+  // Trigger on-demand feed generation (fire-and-forget)
+  useEffect(() => {
+    fetch("/api/feed/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ crisisId }),
+    }).catch(() => {});
+  }, [crisisId]);
+
   // Realtime subscription for new intel_feed rows
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();

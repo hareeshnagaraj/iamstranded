@@ -9,6 +9,7 @@ import { LodgingTable } from "@/components/lodging-table";
 import { EmergencyContacts } from "@/components/emergency-contacts";
 import { LiveIntelFeed } from "@/components/live-intel-feed";
 import { NearbyAirportsProvider } from "@/components/nearby-airports-provider";
+import { useNearbyPlaces } from "@/hooks/use-nearby-places";
 import { haversineKm } from "@/lib/geo";
 import type {
   Airport,
@@ -100,6 +101,9 @@ export function CrisisPageShell({
 
   const userCoords = originCoords;
 
+  // Fetch dynamic airports/lodging based on user location
+  const dynamicPlaces = useNearbyPlaces(userCoords, data.crisis.id);
+
   const onOriginChange = useCallback(
     (value: string, coords?: { lat: number; lon: number }) => {
       setOrigin(value);
@@ -118,12 +122,16 @@ export function CrisisPageShell({
     [],
   );
 
+  // Use dynamic airports when available, fall back to crisis data
+  const baseAirports = dynamicPlaces?.airports ?? data.airports;
+  const baseLodging = dynamicPlaces?.lodging ?? data.lodging;
+
   // Compute user-relative distances and sort airports
   const sortedAirports = useMemo(() => {
-    if (!userCoords) return data.airports;
+    if (!userCoords) return baseAirports;
 
     const withUserDistance: (Airport & { userDistanceKm: number })[] =
-      data.airports.map((ap) => ({
+      baseAirports.map((ap) => ({
         ...ap,
         userDistanceKm: Math.round(
           haversineKm(userCoords.lat, userCoords.lon, ap.latitude, ap.longitude),
@@ -131,13 +139,13 @@ export function CrisisPageShell({
       }));
 
     return withUserDistance.sort((a, b) => a.userDistanceKm - b.userDistanceKm);
-  }, [data.airports, userCoords]);
+  }, [baseAirports, userCoords]);
 
   // Compute user-relative distances and sort lodging
   const sortedLodging = useMemo(() => {
-    if (!userCoords) return data.lodging;
+    if (!userCoords) return baseLodging;
 
-    return data.lodging
+    return baseLodging
       .map((l) => ({
         ...l,
         userDistanceKm: Math.round(
@@ -145,7 +153,7 @@ export function CrisisPageShell({
         ),
       }))
       .sort((a, b) => a.userDistanceKm - b.userDistanceKm);
-  }, [data.lodging, userCoords]);
+  }, [baseLodging, userCoords]);
 
   // Top 3 nearest airport codes for "Near you" feed matching
   const nearbyAirportCodes = useMemo(() => {
