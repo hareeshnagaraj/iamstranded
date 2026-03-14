@@ -112,3 +112,211 @@ values
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'UK FCO', '+44-20-7008-5000', null),
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'India Embassy', '+971-4-397-1222', null),
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Emirates Rebooking', null, 'https://emirates.com/rebook');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Turkey Earthquake (M7.8) — Gaziantep
+-- ═══════════════════════════════════════════════════════════════════════════
+
+insert into public.crisis_events (id, slug, title, location, description, severity, is_active)
+values (
+  'c2d3e4f5-a6b7-8901-cdef-234567890abc',
+  'turkey-earthquake',
+  'Turkey Earthquake (M7.8)',
+  'Gaziantep, Turkey',
+  'M7.8 earthquake in southeastern Turkey — infrastructure damage, airport closures, aftershocks ongoing. ~50,000 travelers affected.',
+  'critical',
+  true
+);
+
+-- Turkey routes (3)
+insert into public.routes (id, crisis_id, rank, title, confidence, time_estimate, cost_range, warning_text, detail, origin, destination)
+values
+  (
+    'c1000000-0000-0000-0000-000000000001',
+    'c2d3e4f5-a6b7-8901-cdef-234567890abc',
+    1,
+    'Drive to Adana, fly to Istanbul',
+    'HIGH',
+    '~8h',
+    '$150-350',
+    'Road damage near Osmaniye — use D400 coastal route',
+    'Drive west on D400 to Adana (3h). Adana airport partially operational — domestic flights running with delays. Turkish Airlines to Istanbul, then connect internationally. Most reliable exit path.',
+    'Gaziantep, Turkey',
+    'Istanbul, Turkey'
+  ),
+  (
+    'c2000000-0000-0000-0000-000000000002',
+    'c2d3e4f5-a6b7-8901-cdef-234567890abc',
+    2,
+    'Drive to Antalya, fly via Istanbul to London',
+    'MEDIUM',
+    '~14h',
+    '$300-700',
+    '8h drive through mountain roads — check conditions',
+    'Long drive west to Antalya (8h via Mersin). Antalya airport fully operational, unaffected by quake. Pegasus to Istanbul, then Turkish Airlines to London. Longer but fully operational route.',
+    'Gaziantep, Turkey',
+    'London, UK'
+  ),
+  (
+    'c3000000-0000-0000-0000-000000000003',
+    'c2d3e4f5-a6b7-8901-cdef-234567890abc',
+    3,
+    'Wait for Gaziantep airport reopening',
+    'LOW',
+    '72h+ wait',
+    '$100-250',
+    'Runway damage — no confirmed reopening date',
+    'Gaziantep Oguzeli Airport (GZT) runway has structural cracks from M7.8 main shock. Engineers assessing — earliest realistic reopening 5-7 days. Stay sheltered, register with embassy.',
+    'Gaziantep, Turkey',
+    'Istanbul, Turkey'
+  );
+
+-- Turkey route legs
+insert into public.route_legs (route_id, leg_order, airport_code, airport_status, flight_code, departure_time)
+values
+  ('c1000000-0000-0000-0000-000000000001', 1, 'ADA', 'warning', 'TK 2038', '14:20'),
+  ('c1000000-0000-0000-0000-000000000001', 2, 'IST', 'open', null, null),
+  ('c2000000-0000-0000-0000-000000000002', 1, 'AYT', 'open', 'PC 1245', '09:30'),
+  ('c2000000-0000-0000-0000-000000000002', 2, 'IST', 'open', 'TK 1838', '15:45'),
+  ('c2000000-0000-0000-0000-000000000002', 3, 'LHR', 'open', null, null),
+  ('c3000000-0000-0000-0000-000000000003', 1, 'GZT', 'closed', 'TK 2066', 'TBD'),
+  ('c3000000-0000-0000-0000-000000000003', 2, 'IST', 'open', null, null);
+
+-- Turkey airports (6)
+insert into public.nearby_airports (crisis_id, airport_code, airport_name, status, status_label, distance_km, latitude, longitude)
+values
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'GZT', 'Gaziantep Oguzeli', 'closed', 'Closed', 20, 36.9472, 37.4787),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'HTY', 'Hatay Airport', 'closed', 'Destroyed', 120, 36.3628, 36.2822),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'ADA', 'Adana Sakirpasa', 'warning', 'Delays', 220, 36.9822, 35.2804),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'AYT', 'Antalya Airport', 'open', 'Open', 560, 36.8987, 30.8005),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'ESB', 'Ankara Esenboga', 'open', 'Open', 580, 40.1281, 32.9951),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'IST', 'Istanbul Airport', 'open', 'Open', 850, 41.2753, 28.7519);
+
+-- Turkey lodging (5)
+insert into public.nearby_lodging (crisis_id, name, status, status_label, available_rooms, price_range, distance_km, latitude, longitude, notes)
+values
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'AFAD Emergency Camp', 'shelter', 'Shelter', 200, 'Free', 5, 37.0660, 37.3781, 'Government emergency shelter — bring ID'),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'Hilton Garden Inn Gaziantep', 'limited', 'Limited', 8, '$60-100/night', 3, 37.0594, 37.3825, 'Structural inspection passed — limited capacity'),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'Divan Gaziantep', 'closed', 'Closed', 0, null, 4, 37.0612, 37.3750, 'Structural damage — evacuated'),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'Adana HiltonSA', 'available', 'Available', 80, '$70-130/night', 220, 36.9912, 35.3250, 'Fully operational, accepting crisis evacuees'),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'Red Crescent Tent City', 'shelter', 'Shelter', 500, 'Free', 8, 37.0800, 37.4000, 'Turkish Red Crescent — families prioritized');
+
+-- Turkey intel feed (5)
+insert into public.intel_feed (crisis_id, category, message, source, source_url)
+values
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'safety', 'M5.2 aftershock reported 15km NE of Gaziantep. Stay away from damaged structures. More aftershocks expected.', 'USGS, AFAD', 'https://earthquake.usgs.gov'),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'ground', 'D400 highway to Adana open but single lane near Osmaniye due to bridge damage. Expect 2h delays.', 'Turkey Highways Authority', null),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'flight', 'Turkish Airlines offering free rebooking for all southeastern Turkey departures through next week.', 'Turkish Airlines', 'https://www.turkishairlines.com'),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'embassy', 'US Consulate Adana operating on emergency hours. All non-essential staff evacuated. Register via STEP.', 'US State Department', 'https://travel.state.gov'),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'accommodation', 'AFAD deploying 10,000 additional tents to Gaziantep region. Registration at any government building.', 'AFAD Turkey', null);
+
+-- Turkey emergency contacts (4)
+insert into public.emergency_contacts (crisis_id, name, phone, url)
+values
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'AFAD Emergency', '122', null),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'US Consulate Adana', '+90-322-346-6262', null),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'UK Embassy Ankara', '+90-312-455-3344', null),
+  ('c2d3e4f5-a6b7-8901-cdef-234567890abc', 'Turkish Airlines Crisis', '+90-212-444-0849', 'https://www.turkishairlines.com');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Kenya Civil Unrest & Protests — Nairobi
+-- ═══════════════════════════════════════════════════════════════════════════
+
+insert into public.crisis_events (id, slug, title, location, description, severity, is_active)
+values (
+  'd3e4f5a6-b7c8-9012-defa-345678901bcd',
+  'kenya-unrest',
+  'Kenya Civil Unrest & Protests',
+  'Nairobi, Kenya',
+  'Widespread protests across Nairobi over tax bill — road blockades, tear gas, airport disruptions. ~15,000 travelers affected.',
+  'high',
+  true
+);
+
+-- Kenya routes (3)
+insert into public.routes (id, crisis_id, rank, title, confidence, time_estimate, cost_range, warning_text, detail, origin, destination)
+values
+  (
+    'd1000000-0000-0000-0000-000000000001',
+    'd3e4f5a6-b7c8-9012-defa-345678901bcd',
+    1,
+    'Fly NBO during overnight window to London',
+    'HIGH',
+    '~9h',
+    '$400-800',
+    'Protests subside after dark — arrive airport by 9PM',
+    'JKIA operating with disruptions during daytime but overnight flights largely unaffected. Kenya Airways red-eye to London departs 23:55. Reach airport via Southern Bypass (avoids CBD). Best window: after 8PM when protests wind down.',
+    'Nairobi, Kenya',
+    'London, UK'
+  ),
+  (
+    'd2000000-0000-0000-0000-000000000002',
+    'd3e4f5a6-b7c8-9012-defa-345678901bcd',
+    2,
+    'Drive to Mombasa, fly via Muscat to London',
+    'MEDIUM',
+    '~20h',
+    '$500-1000',
+    '6h drive on A109 — check road conditions',
+    'Drive to Mombasa via A109 Mombasa Road (6h, generally clear of protests). Moi International Airport (MBA) fully operational. Oman Air via Muscat to London. Longer but avoids all Nairobi disruption.',
+    'Nairobi, Kenya',
+    'London, UK'
+  ),
+  (
+    'd3000000-0000-0000-0000-000000000003',
+    'd3e4f5a6-b7c8-9012-defa-345678901bcd',
+    3,
+    'Wait for NBO normalization, fly direct BA',
+    'LOW',
+    '24-48h wait',
+    '$350-650',
+    'Protest timeline unpredictable',
+    'British Airways has suspended daytime departures but maintaining standby schedule. If protests de-escalate, flights resume within 24h. Lowest cost but highest uncertainty. Stay near airport — avoid CBD entirely.',
+    'Nairobi, Kenya',
+    'London, UK'
+  );
+
+-- Kenya route legs
+insert into public.route_legs (route_id, leg_order, airport_code, airport_status, flight_code, departure_time)
+values
+  ('d1000000-0000-0000-0000-000000000001', 1, 'NBO', 'warning', 'KQ 100', '23:55'),
+  ('d1000000-0000-0000-0000-000000000001', 2, 'LHR', 'open', null, null),
+  ('d2000000-0000-0000-0000-000000000002', 1, 'MBA', 'open', 'WY 352', '03:10'),
+  ('d2000000-0000-0000-0000-000000000002', 2, 'MCT', 'open', 'WY 101', '10:30'),
+  ('d2000000-0000-0000-0000-000000000002', 3, 'LHR', 'open', null, null),
+  ('d3000000-0000-0000-0000-000000000003', 1, 'NBO', 'warning', 'BA 065', 'TBD'),
+  ('d3000000-0000-0000-0000-000000000003', 2, 'LHR', 'open', null, null);
+
+-- Kenya airports (5)
+insert into public.nearby_airports (crisis_id, airport_code, airport_name, status, status_label, distance_km, latitude, longitude)
+values
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'WIL', 'Wilson Airport', 'closed', 'Closed', 6, -1.3214, 36.8148),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'NBO', 'Jomo Kenyatta Intl', 'warning', 'Disrupted', 18, -1.3192, 36.9278),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'KIS', 'Kisumu Airport', 'open', 'Open', 340, -0.0862, 34.7289),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'MBA', 'Moi International', 'open', 'Open', 480, -4.0348, 39.5942),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'DAR', 'Julius Nyerere Intl', 'open', 'Open', 660, -6.8781, 39.2026);
+
+-- Kenya lodging (4)
+insert into public.nearby_lodging (crisis_id, name, status, status_label, available_rooms, price_range, distance_km, latitude, longitude, notes)
+values
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'Hilton Nairobi', 'limited', 'Limited', 12, '$120-200/night', 2, -1.2864, 36.8236, 'CBD location — access may be restricted during protests'),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'Ole Sereni Hotel', 'available', 'Available', 40, '$100-180/night', 10, -1.3375, 36.8489, 'Near JKIA, away from protest zones'),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'Crowne Plaza Nairobi', 'available', 'Available', 55, '$90-160/night', 8, -1.3090, 36.8142, 'Upper Hill — generally calm area'),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'JKIA Transit Hotel', 'available', 'Available', 20, '$60-90/night', 18, -1.3200, 36.9260, 'Inside airport perimeter — safest option for early flights');
+
+-- Kenya intel feed (5)
+insert into public.intel_feed (crisis_id, category, message, source, source_url)
+values
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'safety', 'Tear gas deployed on Moi Avenue and Kenyatta Avenue. Avoid Nairobi CBD entirely. Use Southern Bypass for airport access.', 'Kenya Police, Reuters', 'https://www.reuters.com'),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'flight', 'Kenya Airways cancels 8 daytime departures. Red-eye flights (after 10PM) still operating. Check rebooking portal.', 'Kenya Airways', 'https://www.kenya-airways.com'),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'ground', 'Uber and Bolt suspended in Nairobi CBD. Services available in Westlands, Kilimani, and airport area.', 'Uber Kenya, local reports', null),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'embassy', 'US Embassy Nairobi closed to public. Emergency services via phone only. Avoid Gigiri area after 2PM.', 'US Embassy Nairobi', 'https://ke.usembassy.gov'),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'accommodation', 'Hotels near JKIA offering crisis rates for stranded travelers. Ole Sereni and JKIA Transit best positioned.', 'Local hotel associations', null);
+
+-- Kenya emergency contacts (4)
+insert into public.emergency_contacts (crisis_id, name, phone, url)
+values
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'Kenya Emergency', '999', null),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'US Embassy Nairobi', '+254-20-363-6000', null),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'UK High Commission', '+254-20-287-3000', null),
+  ('d3e4f5a6-b7c8-9012-defa-345678901bcd', 'Kenya Airways Support', '+254-20-327-4747', 'https://www.kenya-airways.com');

@@ -6,6 +6,7 @@ import {
   Building2,
   Car,
   ExternalLink,
+  Loader2,
   Plane,
   Shield,
 } from "lucide-react";
@@ -57,6 +58,13 @@ function timeAgo(isoDate: string): string {
   return `${hours}h ago`;
 }
 
+/** Returns true if all items are older than 30 minutes */
+function isFeedStale(feed: IntelFeedItem[]): boolean {
+  if (feed.length === 0) return true;
+  const newest = Math.max(...feed.map((f) => new Date(f.createdAt).getTime()));
+  return Date.now() - newest > 30 * 60 * 1000;
+}
+
 interface LiveIntelFeedProps {
   feed: IntelFeedItem[];
   crisisId: string;
@@ -69,14 +77,32 @@ export function LiveIntelFeed({
   const nearbyAirportCodes = useNearbyAirportCodes();
   const [feed, setFeed] = useState(initialFeed);
   const [filter, setFilter] = useState("all");
+  const [genStatus, setGenStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
 
-  // Trigger on-demand feed generation (fire-and-forget)
+  // Trigger on-demand feed generation
   useEffect(() => {
+    setGenStatus("generating");
     fetch("/api/feed/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ crisisId }),
-    }).catch(() => {});
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.generated > 0) {
+          setGenStatus("done");
+          // Auto-clear stale items from local state (items older than 2h)
+          const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+          setFeed((prev) =>
+            prev.filter((item) => new Date(item.createdAt).getTime() > cutoff),
+          );
+        } else {
+          setGenStatus("idle");
+        }
+      })
+      .catch(() => setGenStatus("error"));
   }, [crisisId]);
 
   // Realtime subscription for new intel_feed rows
@@ -106,6 +132,7 @@ export function LiveIntelFeed({
             createdAt: String(row.created_at ?? new Date().toISOString()),
           };
           setFeed((prev) => [item, ...prev]);
+          setGenStatus("done");
         },
       )
       .subscribe();
@@ -121,6 +148,8 @@ export function LiveIntelFeed({
     const msg = item.message.toUpperCase();
     return nearbyAirportCodes.some((code) => msg.includes(code));
   };
+
+  const stale = isFeedStale(feed);
 
   const filtered = (() => {
     const base =
@@ -139,9 +168,11 @@ export function LiveIntelFeed({
           Live Intel
         </h2>
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-1.5 animate-blink bg-emerald-500" />
+          <span
+            className={`inline-block h-1.5 w-1.5 ${genStatus === "generating" ? "animate-ping bg-amber-500" : "animate-blink bg-emerald-500"}`}
+          />
           <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-neutral-600">
-            Real-time
+            {genStatus === "generating" ? "Updating" : "Real-time"}
           </span>
         </span>
       </div>
@@ -149,6 +180,27 @@ export function LiveIntelFeed({
       <div className="mb-3 shrink-0">
         <FilterChips active={filter} onChange={setFilter} />
       </div>
+
+      {/* Generating indicator */}
+      {genStatus === "generating" && (
+        <div className="mb-3 flex shrink-0 items-center gap-2 border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+          <Loader2 size={12} className="animate-spin text-amber-500" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-amber-500">
+            {stale
+              ? "Generating fresh intel — stand by..."
+              : "Checking for updates..."}
+          </span>
+        </div>
+      )}
+
+      {/* Stale warning when generation didn't produce results */}
+      {stale && genStatus === "idle" && feed.length > 0 && (
+        <div className="mb-3 shrink-0 border border-neutral-700 bg-neutral-800/50 px-3 py-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-neutral-500">
+            Feed data may be outdated — refresh page to retry
+          </span>
+        </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto border border-neutral-800">
         {filtered.map((item, i) => (
@@ -198,7 +250,9 @@ export function LiveIntelFeed({
         ))}
         {filtered.length === 0 && (
           <p className="py-6 text-center font-mono text-[11px] uppercase tracking-[0.1em] text-neutral-700">
-            No updates in this category.
+            {genStatus === "generating"
+              ? "Waiting for fresh intel..."
+              : "No updates in this category."}
           </p>
         )}
       </div>

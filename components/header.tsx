@@ -1,11 +1,16 @@
+import Link from "next/link";
+
 export function Header() {
   return (
     <header className="border-b border-neutral-800 bg-obsidian px-5 py-3">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[13px] font-bold uppercase tracking-[0.15em] text-text-primary">
+          <Link
+            href="/"
+            className="font-mono text-[13px] font-bold uppercase tracking-[0.15em] text-text-primary hover:text-white"
+          >
             IAMSTRANDED
-          </span>
+          </Link>
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.1em] text-neutral-600 sm:inline">
             / CRISIS INTEL
           </span>

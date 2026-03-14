@@ -6,6 +6,7 @@ import { getCrisisContext } from "@/lib/crisis-data";
 const VALID_CATEGORIES = ["flight", "ground", "accommodation", "embassy", "safety"];
 const STALENESS_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_MESSAGE_LENGTH = 280; // Twitter-length cap for concise updates
+const STALE_CUTOFF_MS = 2 * 60 * 60 * 1000; // 2 hours — purge items older than this
 
 // In-memory lock to prevent concurrent generation for the same crisis
 const generatingAt = new Map<string, number>();
@@ -64,8 +65,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ generated: 0, reason: "missing crisisId" });
     }
 
-    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
+      console.warn("[feed/generate] No GOOGLE_API_KEY or GOOGLE_AI_API_KEY set");
       return NextResponse.json({ generated: 0, reason: "no api key" });
     }
 
@@ -93,6 +95,17 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ generated: 0, reason: "fresh" });
         }
       }
+
+      // Purge very old feed items (>2 hours) to keep feed relevant
+      const cutoff = new Date(Date.now() - STALE_CUTOFF_MS).toISOString();
+      const { error: deleteErr } = await supabase
+        .from("intel_feed")
+        .delete()
+        .eq("crisis_id", crisisId)
+        .lt("created_at", cutoff);
+      if (deleteErr) {
+        console.warn("[feed/generate] Failed to purge old items:", deleteErr.message);
+      }
     }
 
     // Fetch crisis context for prompt
@@ -118,12 +131,13 @@ ${airportTable}
 RECENT ITEMS (do NOT repeat these):
 ${feedContext || "  (none yet)"}
 
-Generate 1-2 NEW items as a JSON array. STRICT RULES:
-- Each message MUST be 1-2 sentences, MAX 250 characters. Be terse and specific.
+Generate 3-5 NEW items as a JSON array. Cover DIFFERENT categories. STRICT RULES:
+- Each message MUST be 1-2 sentences, MAX 250 characters. Be terse, specific, and actionable.
 - Do NOT prefix messages with category tags like [FLIGHT] or [CRITICAL].
 - category field must be one of: flight, ground, accommodation, embassy, safety
 - source: short name (e.g. "Reuters", "UAE Civil Defense", "Emirates official")
 - sourceUrl: a plausible https URL or null
+- Vary the categories — each item should be a different category if possible.
 
 Return ONLY valid JSON — no markdown, no explanation:
 [{"category":"flight","message":"Short update here.","source":"Source Name","sourceUrl":null}]`;
@@ -137,12 +151,14 @@ Return ONLY valid JSON — no markdown, no explanation:
     const parsed: unknown = JSON.parse(jsonStr);
 
     if (!Array.isArray(parsed)) {
+      console.warn("[feed/generate] Gemini returned non-array:", text.slice(0, 200));
       return NextResponse.json({ generated: 0, reason: "invalid response" });
     }
 
     const validItems = parsed.filter(isValidItem);
 
     if (validItems.length === 0) {
+      console.warn("[feed/generate] No valid items from Gemini response:", text.slice(0, 200));
       return NextResponse.json({ generated: 0, reason: "no valid items" });
     }
 
@@ -163,12 +179,18 @@ Return ONLY valid JSON — no markdown, no explanation:
           source: item.source,
           source_url: sanitizeUrl(item.sourceUrl),
         });
-        if (!error) inserted++;
+        if (error) {
+          console.error("[feed/generate] Supabase insert failed:", error.message, error.details);
+        } else {
+          inserted++;
+        }
       }
     }
 
+    console.log(`[feed/generate] Generated ${validItems.length}, inserted ${inserted} for crisis ${crisisId}`);
     return NextResponse.json({ generated: inserted });
-  } catch {
+  } catch (err) {
+    console.error("[feed/generate] Unexpected error:", err);
     return NextResponse.json({ generated: 0, reason: "error" });
   }
 }

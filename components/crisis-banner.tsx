@@ -9,6 +9,7 @@ export function CrisisBanner({
   origin,
   destination,
   loading,
+  suggestedDestinations = [],
   onOriginChange,
   onOriginAutoGeocode,
   onDestinationChange,
@@ -18,6 +19,7 @@ export function CrisisBanner({
   origin: string;
   destination: string;
   loading: boolean;
+  suggestedDestinations?: string[];
   onOriginChange: (value: string, coords?: { lat: number; lon: number }) => void;
   onOriginAutoGeocode?: (coords: { lat: number; lon: number }) => void;
   onDestinationChange: (value: string, coords?: { lat: number; lon: number }) => void;
@@ -76,6 +78,24 @@ export function CrisisBanner({
             )}
           </button>
         </div>
+
+        {/* Suggested destination chips */}
+        {suggestedDestinations.length > 0 && !destination && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-neutral-600">
+              Popular escape routes:
+            </span>
+            {suggestedDestinations.map((dest) => (
+              <button
+                key={dest}
+                onClick={() => onDestinationChange(dest)}
+                className="border border-neutral-700 px-2.5 py-1 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-text-primary"
+              >
+                {dest}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

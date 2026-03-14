@@ -26,6 +26,7 @@ interface ShellData {
   lodging: Lodging[];
   feed: IntelFeedItem[];
   contacts: EmergencyContact[];
+  suggestedDestinations: string[];
 }
 
 export function CrisisPageShell({
@@ -33,8 +34,8 @@ export function CrisisPageShell({
 }: {
   data: ShellData;
 }) {
-  const [origin, setOrigin] = useState("Al Nahda, Dubai");
-  const [destination, setDestination] = useState("Athens, Greece");
+  const [origin, setOrigin] = useState(data.crisis.location);
+  const [destination, setDestination] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchRoutes, setSearchRoutes] = useState<Route[] | null>(null);
   const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
@@ -180,6 +181,7 @@ export function CrisisPageShell({
             origin={origin}
             destination={destination}
             loading={loading}
+            suggestedDestinations={data.suggestedDestinations}
             onOriginChange={onOriginChange}
             onOriginAutoGeocode={onOriginAutoGeocode}
             onDestinationChange={setDestination}
