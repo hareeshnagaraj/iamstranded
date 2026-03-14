@@ -57,6 +57,7 @@ export function CrisisBanner({
             onAutoGeocode={onOriginAutoGeocode}
             placeholder="Your location"
             icon={MapPin}
+            showCurrentLocation
           />
           <LocationAutocomplete
             value={destination}

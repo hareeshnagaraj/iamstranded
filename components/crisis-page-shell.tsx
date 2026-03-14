@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CrisisBanner } from "@/components/crisis-banner";
 import { LoadingShimmer } from "@/components/loading-shimmer";
 import { RouteList } from "@/components/route-list";
@@ -34,43 +34,11 @@ export function CrisisPageShell({
 }: {
   data: ShellData;
 }) {
-  const [origin, setOrigin] = useState(data.crisis.location);
+  const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchRoutes, setSearchRoutes] = useState<Route[] | null>(null);
   const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
-
-  // Auto-detect user location via browser geolocation
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=10`,
-            { headers: { "User-Agent": "iamstranded/1.0" } },
-          );
-          if (!res.ok) return;
-          const data = await res.json();
-          const city =
-            data.address?.city ||
-            data.address?.town ||
-            data.address?.village ||
-            "";
-          const country = data.address?.country || "";
-          const placeName = [city, country].filter(Boolean).join(", ");
-          if (placeName) setOrigin(placeName);
-        } catch {
-          // silently keep default origin
-        }
-      },
-      () => {
-        // permission denied or error — keep default
-      },
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 },
-    );
-  }, []);
 
   const handleSearch = async () => {
     setLoading(true);

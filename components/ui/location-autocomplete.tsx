@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Navigation } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -17,17 +18,20 @@ export function LocationAutocomplete({
   onAutoGeocode,
   placeholder,
   icon: Icon,
+  showCurrentLocation,
 }: {
   value: string;
   onChange: (value: string, coords?: { lat: number; lon: number }) => void;
   onAutoGeocode?: (coords: { lat: number; lon: number }) => void;
   placeholder: string;
   icon: LucideIcon;
+  showCurrentLocation?: boolean;
 }) {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [locating, setLocating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const skipNextFetch = useRef(false);
@@ -97,6 +101,50 @@ export function LocationAutocomplete({
     [onChange],
   );
 
+  const showLocationOption = showCurrentLocation && query.length < 3 && !locating;
+
+  const handleUseCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    setOpen(false);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=10`,
+            { headers: { "User-Agent": "iamstranded/1.0" } },
+          );
+          if (!res.ok) {
+            setLocating(false);
+            return;
+          }
+          const data = await res.json();
+          const city =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            "";
+          const country = data.address?.country || "";
+          const placeName = [city, country].filter(Boolean).join(", ");
+          if (placeName) {
+            skipNextFetch.current = true;
+            setQuery(placeName);
+            onChange(placeName, { lat: latitude, lon: longitude });
+          }
+        } catch {
+          // silently fail
+        } finally {
+          setLocating(false);
+        }
+      },
+      () => {
+        setLocating(false);
+      },
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 },
+    );
+  }, [onChange]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open || results.length === 0) return;
 
@@ -130,16 +178,33 @@ export function LocationAutocomplete({
       <Icon size={14} className="absolute left-3 top-3 text-neutral-600" />
       <input
         ref={inputRef}
-        value={query}
+        value={locating ? "Locating..." : query}
         onChange={(e) => {
           setQuery(e.target.value);
           onChange(e.target.value);
+        }}
+        onFocus={() => {
+          if (showCurrentLocation && query.length < 3) {
+            setOpen(true);
+          }
         }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="w-full border border-neutral-800 bg-[#0A0A0A] py-2.5 pl-[34px] pr-3 font-mono text-sm text-text-primary outline-none placeholder:text-neutral-700 focus:border-neutral-600"
         autoComplete="off"
+        readOnly={locating}
       />
+      {open && showLocationOption && results.length === 0 && (
+        <ul className="absolute left-0 right-0 top-full z-50 mt-1 border border-neutral-800 bg-[#0A0A0A]">
+          <li
+            onMouseDown={handleUseCurrentLocation}
+            className="flex cursor-pointer items-center gap-2 px-3 py-2 font-mono text-sm text-text-primary hover:bg-neutral-900"
+          >
+            <Navigation size={14} className="text-neutral-400" />
+            Use current location
+          </li>
+        </ul>
+      )}
       {open && results.length > 0 && (
         <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto border border-neutral-800 bg-[#0A0A0A]">
           {results.map((r, i) => (

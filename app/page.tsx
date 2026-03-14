@@ -3,6 +3,7 @@ import { Footer } from "@/components/footer";
 import { LandingHero } from "@/components/landing-hero";
 import { CrisisGrid } from "@/components/crisis-grid";
 import { GlobalSignalBar } from "@/components/global-signal-bar";
+import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { getActiveCrises } from "@/lib/crisis-data";
 import { getGlobalSignals } from "@/lib/external-apis";
 
@@ -17,6 +18,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-obsidian text-text-primary">
       <Header />
+      <DisclaimerBanner />
       <main className="mx-auto w-full max-w-[1400px] px-4 lg:px-6">
         <LandingHero crisisCount={crises.length} />
         <GlobalSignalBar signals={signals} />

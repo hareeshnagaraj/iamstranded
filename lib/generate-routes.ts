@@ -126,7 +126,7 @@ export async function generateRoutes(
 ): Promise<Route[]> {
   const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) {
-    return fallbackMockRoutes(crisis.id, origin, destination);
+    return fallbackMockRoutes(crisis.slug, origin, destination);
   }
 
   try {
@@ -141,12 +141,12 @@ export async function generateRoutes(
     const parsed: unknown = JSON.parse(jsonStr);
 
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return fallbackMockRoutes(crisis.id, origin, destination);
+      return fallbackMockRoutes(crisis.slug, origin, destination);
     }
 
     const validRoutes = parsed.filter(isValidRoute);
     if (validRoutes.length === 0) {
-      return fallbackMockRoutes(crisis.id, origin, destination);
+      return fallbackMockRoutes(crisis.slug, origin, destination);
     }
 
     return validRoutes.map((gr) => {
@@ -177,18 +177,18 @@ export async function generateRoutes(
       };
     });
   } catch {
-    return fallbackMockRoutes(crisis.id, origin, destination);
+    return fallbackMockRoutes(crisis.slug, origin, destination);
   }
 }
 
 function fallbackMockRoutes(
-  crisisId: string,
+  crisisSlug: string,
   origin: string,
   destination: string,
 ): Route[] {
-  return getMockRoutes().map((r) => ({
+  return getMockRoutes(crisisSlug).map((r) => ({
     ...r,
-    crisisId,
+    crisisId: crisisSlug,
     origin,
     destination,
   }));
