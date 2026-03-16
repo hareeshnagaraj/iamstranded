@@ -54,8 +54,8 @@ CRISIS CONTEXT:
   Severity: ${crisis.severity.toUpperCase()}
   Description: ${crisis.description}
 
-NEARBY AIRPORTS (sorted by distance from crisis location):
-  CODE | NAME | STATUS | DISTANCE
+CRISIS-AFFECTED AIRPORTS (for status awareness only — do NOT force routes through these):
+  CODE | NAME | STATUS | DISTANCE FROM CRISIS
 ${airportTable}
 
 LATEST INTEL:
@@ -66,10 +66,12 @@ TASK: Generate 3 ranked escape routes from "${origin}" to "${destination}".
 RULES:
 - Route 1 = highest confidence / most recommended. Route 3 = fallback / riskiest.
 - Each route has legs — the airports the traveler passes through (including origin departure and final destination airports).
+- Routes MUST be geographically sensible. Use the shortest/most logical path between origin and destination. Do NOT route through crisis-zone airports unless the origin or destination is actually in or near the crisis zone.
+- The crisis-affected airports list above is for STATUS AWARENESS — use it to know which airports to AVOID, not as a list of waypoints.
 - Use realistic flight codes (airline code + 3 digits), departure times, and cost estimates.
 - warningText: flag visa issues, availability concerns, or safety risks. null if none.
 - detail: 2-3 sentences explaining the route strategy.
-- For closed airports, you may include a "wait for reopening" route as route 3.
+- For closed airports, you may include a "wait for reopening" route as route 3 ONLY if the origin or destination is near those airports.
 - Keep titles SHORT (under 60 chars). Keep detail to 2-3 sentences max.
 
 RESPOND WITH ONLY a valid JSON array — no markdown fences, no explanation, no text before or after:
@@ -123,10 +125,10 @@ export async function generateRoutes(
   feed: IntelFeedItem[],
   origin: string,
   destination: string,
-): Promise<Route[]> {
-  const apiKey = process.env.GOOGLE_AI_API_KEY;
+): Promise<{ routes: Route[]; fallback: boolean }> {
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
-    return fallbackMockRoutes(crisis.slug, origin, destination);
+    return { routes: fallbackMockRoutes(crisis.slug, origin, destination), fallback: true };
   }
 
   try {
@@ -141,43 +143,46 @@ export async function generateRoutes(
     const parsed: unknown = JSON.parse(jsonStr);
 
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return fallbackMockRoutes(crisis.slug, origin, destination);
+      return { routes: fallbackMockRoutes(crisis.slug, origin, destination), fallback: true };
     }
 
     const validRoutes = parsed.filter(isValidRoute);
     if (validRoutes.length === 0) {
-      return fallbackMockRoutes(crisis.slug, origin, destination);
+      return { routes: fallbackMockRoutes(crisis.slug, origin, destination), fallback: true };
     }
 
-    return validRoutes.map((gr) => {
-      const routeId = crypto.randomUUID();
-      const legs: RouteLeg[] = gr.legs.map((gl) => ({
-        id: crypto.randomUUID(),
-        routeId,
-        legOrder: gl.legOrder,
-        airportCode: gl.airportCode,
-        airportStatus: gl.airportStatus,
-        flightCode: gl.flightCode ?? null,
-        departureTime: gl.departureTime ?? null,
-      }));
+    return {
+      routes: validRoutes.map((gr) => {
+        const routeId = crypto.randomUUID();
+        const legs: RouteLeg[] = gr.legs.map((gl) => ({
+          id: crypto.randomUUID(),
+          routeId,
+          legOrder: gl.legOrder,
+          airportCode: gl.airportCode,
+          airportStatus: gl.airportStatus,
+          flightCode: gl.flightCode ?? null,
+          departureTime: gl.departureTime ?? null,
+        }));
 
-      return {
-        id: routeId,
-        crisisId: crisis.id,
-        rank: gr.rank,
-        title: gr.title,
-        confidence: gr.confidence,
-        timeEstimate: gr.timeEstimate,
-        costRange: gr.costRange,
-        warningText: gr.warningText ?? null,
-        detail: gr.detail ?? null,
-        origin,
-        destination,
-        legs,
-      };
-    });
+        return {
+          id: routeId,
+          crisisId: crisis.id,
+          rank: gr.rank,
+          title: gr.title,
+          confidence: gr.confidence,
+          timeEstimate: gr.timeEstimate,
+          costRange: gr.costRange,
+          warningText: gr.warningText ?? null,
+          detail: gr.detail ?? null,
+          origin,
+          destination,
+          legs,
+        };
+      }),
+      fallback: false,
+    };
   } catch {
-    return fallbackMockRoutes(crisis.slug, origin, destination);
+    return { routes: fallbackMockRoutes(crisis.slug, origin, destination), fallback: true };
   }
 }
 

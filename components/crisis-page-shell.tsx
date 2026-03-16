@@ -38,11 +38,13 @@ export function CrisisPageShell({
   const [destination, setDestination] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchRoutes, setSearchRoutes] = useState<Route[] | null>(null);
+  const [routesFallback, setRoutesFallback] = useState(false);
   const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   const handleSearch = async () => {
     setLoading(true);
     setSearchRoutes(null);
+    setRoutesFallback(false);
 
     try {
       const res = await fetch("/api/routes", {
@@ -58,6 +60,7 @@ export function CrisisPageShell({
       if (res.ok) {
         const json = await res.json();
         setSearchRoutes(json.routes ?? []);
+        setRoutesFallback(json.fallback === true);
       } else {
         setSearchRoutes([]);
       }
@@ -157,6 +160,13 @@ export function CrisisPageShell({
           />
 
           {showShimmer && <LoadingShimmer origin={origin} />}
+          {showRoutes && routesFallback && (
+            <div className="border border-amber-500/20 bg-amber-500/5 px-4 py-2.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-amber-500">
+                AI routing unavailable — showing sample routes from {data.crisis.location}
+              </span>
+            </div>
+          )}
           {showRoutes && <RouteList routes={displayRoutes} />}
 
           <AirportTable

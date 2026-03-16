@@ -26,13 +26,13 @@ export async function POST(request: NextRequest) {
 
   // 2. Cache miss — fetch crisis context and generate routes via Claude API
   const { crisis, airports, feed } = await getCrisisContext(crisisId);
-  const routes = await generateRoutes(crisis, airports, feed, origin, destination);
+  const { routes, fallback } = await generateRoutes(crisis, airports, feed, origin, destination);
 
   // 3. Store in cache (fire-and-forget — don't block response)
   cacheRoutes(crisisId, origin, destination, routes).catch(() => {});
 
   return NextResponse.json(
-    { routes, generatedAt: new Date().toISOString(), cached: false },
+    { routes, generatedAt: new Date().toISOString(), cached: false, fallback },
     { headers: { "Cache-Control": "no-store, max-age=0" } },
   );
 }

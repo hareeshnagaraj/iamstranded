@@ -195,10 +195,37 @@ export function LiveIntelFeed({
 
       {/* Stale warning when generation didn't produce results */}
       {stale && genStatus === "idle" && feed.length > 0 && (
-        <div className="mb-3 shrink-0 border border-neutral-700 bg-neutral-800/50 px-3 py-2">
+        <div className="mb-3 flex shrink-0 items-center justify-between border border-neutral-700 bg-neutral-800/50 px-3 py-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-neutral-500">
-            Feed data may be outdated — refresh page to retry
+            Feed data may be outdated
           </span>
+          <button
+            type="button"
+            onClick={() => {
+              setGenStatus("generating");
+              fetch("/api/feed/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ crisisId }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.generated > 0) {
+                    setGenStatus("done");
+                    const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+                    setFeed((prev) =>
+                      prev.filter((item) => new Date(item.createdAt).getTime() > cutoff),
+                    );
+                  } else {
+                    setGenStatus("idle");
+                  }
+                })
+                .catch(() => setGenStatus("error"));
+            }}
+            className="font-mono text-[10px] uppercase tracking-[0.08em] text-amber-500 transition-colors hover:text-amber-400"
+          >
+            Retry
+          </button>
         </div>
       )}
 
